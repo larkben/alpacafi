@@ -5,6 +5,8 @@ import { getNetwork } from "../scripts/network";
 import { UpdatePair } from "../artifacts/ts";
 import { PrivateKeyWallet } from '@alephium/web3-wallet'
 
+import 'dotenv/config';
+
 let node = new NodeProvider("https://node.alphaga.app");
 
 // insert private key here / bot address that updates script
