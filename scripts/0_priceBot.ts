@@ -4,15 +4,16 @@ import { Settings } from "../alephium.config";
 import { getNetwork } from "../scripts/network";
 import { UpdatePair } from "../artifacts/ts";
 import { PrivateKeyWallet } from '@alephium/web3-wallet'
-
 import 'dotenv/config';
 
 let node = new NodeProvider("https://node.alphaga.app");
 
-// insert private key here / bot address that updates script
+const privateKey = process.env.bot || process.env.BOT_PRIVATE_KEY;
+if (!privateKey) {
+  throw new Error("Private key not found!");
+}
 
-const Signer = new PrivateKeyWallet({ privateKey: String(process.env.bot) })
-
+const Signer = new PrivateKeyWallet({ privateKey });
 
 // List of ALPH/TOKEN pools and their decimals
 let pools: [string, number, number, string][] = [
