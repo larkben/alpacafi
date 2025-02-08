@@ -3,14 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "compile": "npx @alephium/cli compile",
-    "test": "npx @alephium/cli compile; jest -i --config ./jest-config.json",
-    "devnet:deploy": "npx --yes @alephium/cli@latest deploy -n devnet",
-    "testnet:deploy": "npx --yes @alephium/cli@latest deploy -n testnet",
     "mainnet:deploy": "npx --yes @alephium/cli@latest deploy -n mainnet"
   },
   "dependencies": {
