@@ -50,7 +50,7 @@ const configuration: typeof config = {
     mainnet: {
       networkId: 0,
       nodeUrl: process.env.NODE_URL as string ?? 'https://node.alphaga.app',
-      privateKeys: process.env.prodkey === undefined ? [] : process.env.prodkey.split(','),
+      privateKeys: process.env.bot === undefined ? [] : process.env.bot.split(','),
       confirmations: 2,
       settings: loadSettings('mainnet')
     }
