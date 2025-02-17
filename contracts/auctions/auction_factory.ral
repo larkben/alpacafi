@@ -117,12 +117,20 @@ TxScript Bid (
     token: ByteVec,
     amount: U256
 ) {
+<<<<<<< HEAD
     contract.bid{callerAddress!() -> token: amount}(path, token, amount)
+=======
+    contract.bid{callerAddress!() -> token, amount}(path, token, amount)
+>>>>>>> 029c85b (contract edits)
 }
 
 TxScript Redeem (
     contract: AuctionFactory,
     path: ByteVec
 ) {
+<<<<<<< HEAD
     contract.redeem(path)
+=======
+    contract.redeem()
+>>>>>>> 029c85b (contract edits)
 }
