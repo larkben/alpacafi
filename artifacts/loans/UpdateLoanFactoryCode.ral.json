@@ -2,10 +2,14 @@
   "version": "v3.11.1",
   "name": "UpdateLoanFactoryCode",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "bytecodeTemplate": "01010300000005{1}0d0c{0}0110",
 =======
   "bytecodeTemplate": "01010300000005{1}0d0c{0}010e",
 >>>>>>> cd409c5 (compiled code)
+=======
+  "bytecodeTemplate": "01010300000005{1}0d0c{0}0110",
+>>>>>>> a583f7e (templates destroyed)
   "fieldsSig": {
     "names": [
       "loanFactory",

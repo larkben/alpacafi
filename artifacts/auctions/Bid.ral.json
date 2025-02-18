@@ -1,5 +1,6 @@
 {
   "version": "v3.11.1",
+<<<<<<< HEAD
 <<<<<<< HEAD:artifacts/loans/BidLoan.ral.json
   "name": "BidLoan",
   "bytecodeTemplate": "0101030000000db47a{3}{2}a313c3038d7ea4c68000a2{1}{2}0e0c{0}0109",
@@ -7,18 +8,22 @@
   "name": "Bid",
   "bytecodeTemplate": "0101030000000bb4{2}{3}a3{1}{2}{3}0f0c{0}0101",
 >>>>>>> cd409c5 (compiled code):artifacts/auctions/Bid.ral.json
+=======
+  "name": "BidLoan",
+  "bytecodeTemplate": "0101030000000db47a{3}{2}a313c3038d7ea4c68000a2{1}{2}0e0c{0}0109",
+>>>>>>> a583f7e (templates destroyed)
   "fieldsSig": {
     "names": [
+      "loanFactory",
       "contract",
-      "path",
-      "token",
-      "amount"
+      "bidAmount",
+      "token"
     ],
     "types": [
-      "AuctionFactory",
+      "LoanFactory",
       "ByteVec",
-      "ByteVec",
-      "U256"
+      "U256",
+      "ByteVec"
     ],
     "isMutable": [
       false,

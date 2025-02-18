@@ -2,20 +2,30 @@
   "version": "v3.11.1",
   "name": "LiquidationLoan",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "bytecodeTemplate": "01010300000007{1}{2}{3}0f0c{0}0108",
 =======
   "bytecodeTemplate": "01010300000005{1}0d0c{0}0108",
 >>>>>>> cd409c5 (compiled code)
+=======
+  "bytecodeTemplate": "01010300000007{1}{2}{3}0f0c{0}0108",
+>>>>>>> a583f7e (templates destroyed)
   "fieldsSig": {
     "names": [
       "loanFactory",
-      "contract"
+      "contract",
+      "tokenOracle",
+      "collateralOracle"
     ],
     "types": [
       "LoanFactory",
-      "ByteVec"
+      "ByteVec",
+      "Bool",
+      "Bool"
     ],
     "isMutable": [
+      false,
+      false,
       false,
       false
     ]

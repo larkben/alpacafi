@@ -2,20 +2,30 @@
   "version": "v3.11.1",
   "name": "AcceptLoan",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "bytecodeTemplate": "01010300020013{1}040e0e{0}010117011700b416001601a3{1}{2}{3}0f0c{0}0104",
 =======
   "bytecodeTemplate": "01010300020011{1}040e0e{0}010117011700b416001601a3{1}0d0c{0}0104",
 >>>>>>> cd409c5 (compiled code)
+=======
+  "bytecodeTemplate": "01010300020013{1}040e0e{0}010117011700b416001601a3{1}{2}{3}0f0c{0}0104",
+>>>>>>> a583f7e (templates destroyed)
   "fieldsSig": {
     "names": [
       "loanFactory",
-      "contract"
+      "contract",
+      "tokenOracle",
+      "collateralOracle"
     ],
     "types": [
       "LoanFactory",
-      "ByteVec"
+      "ByteVec",
+      "Bool",
+      "Bool"
     ],
     "isMutable": [
+      false,
+      false,
       false,
       false
     ]

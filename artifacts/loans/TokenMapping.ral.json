@@ -2,29 +2,30 @@
   "version": "v3.11.1",
   "name": "TokenMapping",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "bytecodeTemplate": "0101030000000bb4d1a2{1}{2}{3}{4}100c{0}010e",
 =======
   "bytecodeTemplate": "0101030000000cb4d1a2{1}{2}{3}{4}{5}110c{0}010c",
 >>>>>>> cd409c5 (compiled code)
+=======
+  "bytecodeTemplate": "0101030000000bb4d1a2{1}{2}{3}{4}100c{0}010e",
+>>>>>>> a583f7e (templates destroyed)
   "fieldsSig": {
     "names": [
       "loanFactory",
       "token",
       "add",
       "pairtoken",
-      "decimals",
-      "alephiumOracle"
+      "decimals"
     ],
     "types": [
       "LoanFactory",
       "ByteVec",
       "Bool",
       "ByteVec",
-      "U256",
-      "Bool"
+      "U256"
     ],
     "isMutable": [
-      false,
       false,
       false,
       false,

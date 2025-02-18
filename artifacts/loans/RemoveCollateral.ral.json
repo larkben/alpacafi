@@ -2,22 +2,32 @@
   "version": "v3.11.1",
   "name": "RemoveCollateral",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "bytecodeTemplate": "0101030001000e0c0e{1}0102181700{1}{2}{3}{4}100c{0}010c",
 =======
   "bytecodeTemplate": "0101030001000c0c0e{1}0101181700{1}{2}0e0c{0}010a",
 >>>>>>> cd409c5 (compiled code)
+=======
+  "bytecodeTemplate": "0101030001000e0c0e{1}0102181700{1}{2}{3}{4}100c{0}010c",
+>>>>>>> a583f7e (templates destroyed)
   "fieldsSig": {
     "names": [
       "loanFactory",
       "contractId",
-      "amount"
+      "amount",
+      "tokenOracle",
+      "collateralOracle"
     ],
     "types": [
       "LoanFactory",
       "ByteVec",
-      "U256"
+      "U256",
+      "Bool",
+      "Bool"
     ],
     "isMutable": [
+      false,
+      false,
       false,
       false,
       false
