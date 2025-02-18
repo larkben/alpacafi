@@ -172,11 +172,6 @@ Contract Loan (
 
             // should just return 0.1 alphs
             destroySelf!(borrower)  // liquidation notification
-<<<<<<< HEAD
-
-            return true
-=======
->>>>>>> 029c85b (contract edits)
         }
     }
 
@@ -223,11 +218,7 @@ Contract Loan (
         return collateralAmount
     }
 
-<<<<<<< HEAD
-    @using(checkExternalCaller = true, preapprovedAssets = false, assetsInContract = true, updateFields = false)
-=======
     @using(checkExternalCaller = true, preapprovedAssets = false, assetsInContract = false, updateFields = true)
->>>>>>> 029c85b (contract edits)
     pub fn activateLiquidation(collateralLevel: U256) -> () {
         checkCaller!(callerAddress!() == parentContract, 0)
 
