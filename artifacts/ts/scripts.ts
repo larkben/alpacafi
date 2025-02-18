@@ -14,10 +14,9 @@ import {
 import { getContractByCodeHash } from "./contracts";
 import { default as AcceptLoanScriptJson } from "../loans/AcceptLoan.ral.json";
 import { default as AddCollateralScriptJson } from "../loans/AddCollateral.ral.json";
-import { default as BidLoanScriptJson } from "../loans/BidLoan.ral.json";
+import { default as BidScriptJson } from "../auctions/Bid.ral.json";
 import { default as CancelLoanScriptJson } from "../loans/CancelLoan.ral.json";
 import { default as CreateLoanScriptJson } from "../loans/CreateLoan.ral.json";
-import { default as DestroyLoanFactoryScriptJson } from "../loans/DestroyLoanFactory.ral.json";
 import { default as EditLoanRateScriptJson } from "../loans/EditLoanRate.ral.json";
 import { default as ForceCancelScriptJson } from "../loans/ForceCancel.ral.json";
 import { default as ForceCancelMarketScriptJson } from "../loans/ForceCancelMarket.ral.json";
@@ -25,7 +24,7 @@ import { default as ForfeitLoanScriptJson } from "../loans/ForfeitLoan.ral.json"
 import { default as InsertPairScriptJson } from "../oracle/InsertPair.ral.json";
 import { default as LiquidationLoanScriptJson } from "../loans/LiquidationLoan.ral.json";
 import { default as PayLoanScriptJson } from "../loans/PayLoan.ral.json";
-import { default as RedeemLoanScriptJson } from "../loans/RedeemLoan.ral.json";
+import { default as RedeemScriptJson } from "../auctions/Redeem.ral.json";
 import { default as RemoveCollateralScriptJson } from "../loans/RemoveCollateral.ral.json";
 import { default as RemovePairScriptJson } from "../oracle/RemovePair.ral.json";
 import { default as TokenMappingScriptJson } from "../loans/TokenMapping.ral.json";
@@ -44,8 +43,6 @@ import { DIAOracleValue, OracleData, PairInfo, AllStructs } from "./types";
 export const AcceptLoan = new ExecutableScript<{
   loanFactory: HexString;
   contract: HexString;
-  tokenOracle: boolean;
-  collateralOracle: boolean;
 }>(
   Script.fromJson(AcceptLoanScriptJson, "", AllStructs),
   getContractByCodeHash
@@ -55,19 +52,17 @@ export const AddCollateral = new ExecutableScript<{
   loanFactory: HexString;
   contractId: HexString;
   amount: bigint;
-  tokenOracle: boolean;
-  collateralOracle: boolean;
 }>(
   Script.fromJson(AddCollateralScriptJson, "", AllStructs),
   getContractByCodeHash
 );
 
-export const BidLoan = new ExecutableScript<{
-  loanFactory: HexString;
+export const Bid = new ExecutableScript<{
   contract: HexString;
-  bidAmount: bigint;
+  path: HexString;
   token: HexString;
-}>(Script.fromJson(BidLoanScriptJson, "", AllStructs), getContractByCodeHash);
+  amount: bigint;
+}>(Script.fromJson(BidScriptJson, "", AllStructs), getContractByCodeHash);
 
 export const CancelLoan = new ExecutableScript<{
   loanFactory: HexString;
@@ -81,22 +76,13 @@ export const CreateLoan = new ExecutableScript<{
   loanFactory: HexString;
   tokenRequested: HexString;
   tokenAmount: bigint;
-  tokenOracle: boolean;
   collateralToken: HexString;
   collateralAmount: bigint;
-  collateralOracle: boolean;
   interest: bigint;
   duration: bigint;
   canLiquidate: boolean;
 }>(
   Script.fromJson(CreateLoanScriptJson, "", AllStructs),
-  getContractByCodeHash
-);
-
-export const DestroyLoanFactory = new ExecutableScript<{
-  loanFactory: HexString;
-}>(
-  Script.fromJson(DestroyLoanFactoryScriptJson, "", AllStructs),
   getContractByCodeHash
 );
 
@@ -140,8 +126,6 @@ export const InsertPair = new ExecutableScript<{
 export const LiquidationLoan = new ExecutableScript<{
   loanFactory: HexString;
   contract: HexString;
-  tokenOracle: boolean;
-  collateralOracle: boolean;
 }>(
   Script.fromJson(LiquidationLoanScriptJson, "", AllStructs),
   getContractByCodeHash
@@ -152,20 +136,15 @@ export const PayLoan = new ExecutableScript<{
   contract: HexString;
 }>(Script.fromJson(PayLoanScriptJson, "", AllStructs), getContractByCodeHash);
 
-export const RedeemLoan = new ExecutableScript<{
-  loanFactory: HexString;
+export const Redeem = new ExecutableScript<{
   contract: HexString;
-}>(
-  Script.fromJson(RedeemLoanScriptJson, "", AllStructs),
-  getContractByCodeHash
-);
+  path: HexString;
+}>(Script.fromJson(RedeemScriptJson, "", AllStructs), getContractByCodeHash);
 
 export const RemoveCollateral = new ExecutableScript<{
   loanFactory: HexString;
   contractId: HexString;
   amount: bigint;
-  tokenOracle: boolean;
-  collateralOracle: boolean;
 }>(
   Script.fromJson(RemoveCollateralScriptJson, "", AllStructs),
   getContractByCodeHash
@@ -185,6 +164,7 @@ export const TokenMapping = new ExecutableScript<{
   add: boolean;
   pairtoken: HexString;
   decimals: bigint;
+  alephiumOracle: boolean;
 }>(
   Script.fromJson(TokenMappingScriptJson, "", AllStructs),
   getContractByCodeHash
