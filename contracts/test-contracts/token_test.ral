@@ -1,6 +1,6 @@
 import "std/fungible_token_interface"
 
-// seems a dynamic token is not possible?
+// seems a dynamic token is not possible? // this needs to be deleted
 
 Contract TokenTest (
     name: ByteVec,
