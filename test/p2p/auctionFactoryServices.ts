@@ -27,7 +27,7 @@ import { off } from 'process'
 import { ValByteVec } from '@alephium/web3/dist/src/api/api-alephium'
 import { MinimalContractDeposit, token } from '@alephium/web3/dist/src/codec'
 import { defaultSigner } from './helperFunctions'
-import { AcceptLoan, AddCollateral, Auction, AuctionFactoryInstance, CancelLoan, CreateLoan, ForfeitLoan, LiquidationLoan, Loan, LoanFactory, LoanFactoryInstance, LoanInstance, PayLoan, RemoveCollateral, TestOracleInstance, TokenMapping, WithdrawLoanFactoryFees } from '../../artifacts/ts'
+import { AcceptLoan, AddCollateral, Auction, AuctionFactory, AuctionFactoryInstance, Bid, CancelLoan, CreateLoan, ForfeitLoan, LiquidationLoan, Loan, LoanFactory, LoanFactoryInstance, LoanInstance, PayLoan, RemoveCollateral, TestOracleInstance, TokenMapping, WithdrawAuctionFactoryFees, WithdrawLoanFactoryFees } from '../../artifacts/ts'
   
 web3.setCurrentNodeProvider('http://127.0.0.1:22973', undefined, fetch)
   
@@ -51,48 +51,69 @@ export async function deployAuctionTemplate() {
 }
 
 // auction factory template
-/*
-export async function deployLoanFactory(loanTemplate: LoanInstance, auctionHouse: AuctionFactoryInstance, oracle: TestOracleInstance) {
-    return await LoanFactory.deploy(defaultSigner, {
+export async function deployAuctionFactory(auctionTemplate: LoanInstance) {
+    return await AuctionFactory.deploy(defaultSigner, {
       initialFields: {
           admin: defaultSigner.account.address,
-          loanTemplate: loanTemplate.contractId,
-          auctionHouse: auctionHouse.contractId,
-          activeLoans: 0n,
-          rate: 300n,                               // p2p lending fee
-          oracle: oracle.address,
-          alpaca: oracle.address
+          auctionTemplate: auctionTemplate.contractId,
+          auctionNumber: 0n,
+          fee: 300n
       },
     });
 }
-*/
 
-// loan factory functions
-
-/*
-export async function CreateLoanService (
+// auction factory functions
+export async function BidService (
     signer: SignerProvider,
-    loanFactory: LoanFactoryInstance,
-    tokenRequested: string,
-    tokenAmount: bigint,
-    collateralToken: string,
-    collateralAmount: bigint,
-    interest: bigint,
-    duration: bigint,
-    canLiquidate: boolean
+    auctionFactory: AuctionFactoryInstance,
+    auction: string,
+    token: string,
+    amount: bigint
 ) {
-    return await CreateLoan.execute(signer, {
+    return await Bid.execute(signer, {
       initialFields: {
-          loanFactory: loanFactory.contractId,
-          tokenRequested: '',
-          tokenAmount: tokenAmount,
-          collateralToken: '',
-          collateralAmount: collateralAmount,
-          interest: interest,
-          duration: duration,
-          canLiquidate: canLiquidate
+          contract: auctionFactory.contractId,
+          id: auction,
+          token: token,
+          amount: amount
+      },
+      attoAlphAmount: DUST_AMOUNT * 3n,
+      tokens: [{id: token, amount: amount}]
+    });
+}
+
+export async function RedeemService (
+    signer: SignerProvider,
+    auctionFactory: AuctionFactoryInstance,
+    auction: string,
+    token: string,
+    amount: bigint
+) {
+    return await Bid.execute(signer, {
+      initialFields: {
+          contract: auctionFactory.contractId,
+          id: auction,
+          token: token,
+          amount: amount
       },
       attoAlphAmount: DUST_AMOUNT
     });
 }
-*/
+
+export async function WithdrawAuctionFactoryFeesService (
+    signer: SignerProvider,
+    auctionFactory: AuctionFactoryInstance,
+    who: Address,
+    token: string,
+    amount: bigint
+) {
+    return await WithdrawAuctionFactoryFees.execute(signer, {
+      initialFields: {
+          auction: auctionFactory.contractId,
+          who: who,
+          token: token,
+          amount: amount
+      },
+      attoAlphAmount: DUST_AMOUNT
+    });
+}

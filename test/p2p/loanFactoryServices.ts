@@ -3,6 +3,7 @@ import {
     Address,
     DUST_AMOUNT,
     HexString,
+    MINIMAL_CONTRACT_DEPOSIT,
     NodeProvider,
     ONE_ALPH,
     SignerProvider,
@@ -94,21 +95,25 @@ export async function CreateLoanService (
           duration: duration,
           canLiquidate: canLiquidate
       },
-      attoAlphAmount: DUST_AMOUNT
+      attoAlphAmount: DUST_AMOUNT + (MINIMAL_CONTRACT_DEPOSIT *3n),
+      tokens: [{id: collateralToken, amount: collateralAmount}]
     });
 }
 
 export async function AcceptLoanService (
     signer: SignerProvider,
     loanFactory: LoanFactoryInstance,
-    loan: string
+    loan: string,
+    token: string,
+    amount: bigint
 ) {
     return await AcceptLoan.execute(signer, {
       initialFields: {
           loanFactory: loanFactory.contractId,
           contract: loan
       },
-      attoAlphAmount: DUST_AMOUNT
+      attoAlphAmount: DUST_AMOUNT,
+      tokens: [{id: token, amount: amount}]
     });
 }
 
@@ -130,14 +135,17 @@ export async function CancelLoanService (
 export async function PayLoanService (
     signer: SignerProvider,
     loanFactory: LoanFactoryInstance,
-    loan: string
+    loan: string,
+    token: string,
+    amount: bigint
 ) {
     return await PayLoan.execute(signer, {
       initialFields: {
           loanFactory: loanFactory.contractId,
           contract: loan
       },
-      attoAlphAmount: DUST_AMOUNT
+      attoAlphAmount: DUST_AMOUNT * 3n,
+      tokens: [{id: token, amount: amount}]
     });
 }
 
@@ -163,6 +171,7 @@ export async function AddCollateralService (
     signer: SignerProvider,
     loanFactory: LoanFactoryInstance,
     loan: string,
+    token: string,
     amount: bigint
 ) {
     return await AddCollateral.execute(signer, {
@@ -171,7 +180,8 @@ export async function AddCollateralService (
           contractId: loan,
           amount: amount
       },
-      attoAlphAmount: DUST_AMOUNT
+      attoAlphAmount: DUST_AMOUNT *3n,
+      tokens: [{id: token, amount: amount}]
     });
 }
 
@@ -248,6 +258,6 @@ export async function TokenMappingService (
           decimals: decimals,
           alephiumOracle: alephiumOracle
       },
-      attoAlphAmount: DUST_AMOUNT
+      attoAlphAmount: DUST_AMOUNT + MINIMAL_CONTRACT_DEPOSIT,
     });
 }
