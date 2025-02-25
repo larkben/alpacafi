@@ -8,13 +8,23 @@ import {
 import { PrivateKeyWallet } from "@alephium/web3-wallet";
 import { getSigners, testAddress } from "@alephium/web3-test";
 import { randomP2PKHAddress, alph } from "./helperFunctions";
+import { AuctionFactoryInstance, AuctionInstance, LoanFactoryInstance, LoanInstance, TestOracleInstance } from "../../artifacts/ts";
+import { deployTestOracle } from "./priceOracleServices";
+import { deployAuctionFactory, deployAuctionTemplate } from "./auctionFactoryServices";
+import { deployLoanTemplate } from "./loanFactoryServices";
   
 const nodeProvider = new NodeProvider("http://127.0.0.1:22973");
   
 describe("lending p2p coverage + tests", () => {
     const groupIndex = groupOfAddress(testAddress);
 
-    //let collectionTemplate: NFTPublicSaleCollectionSequentialWithRoyaltyInstance
+    let oracleTemplate: TestOracleInstance
+    
+    let auctionTemplate: AuctionInstance
+    let auctionFactoryTemplate: AuctionFactoryInstance
+
+    let loanTemplate: LoanInstance
+    let loanFactoryTemplate: LoanFactoryInstance
   
     let lister: Address;
     let buyer: PrivateKeyWallet[];
@@ -23,7 +33,12 @@ describe("lending p2p coverage + tests", () => {
       lister = randomP2PKHAddress(groupIndex);
       buyer = await getSigners(2, alph(1000), groupIndex);
 
-      //collectionTemplate = (await deployCollection()).contractInstance
+      oracleTemplate = (await deployTestOracle()).contractInstance
+
+      auctionTemplate = (await deployAuctionTemplate()).contractInstance
+      auctionFactoryTemplate = (await deployAuctionFactory(auctionTemplate, oracleTemplate)).contractInstance
+
+      loanTemplate = (await deployLoanTemplate(auctionFactoryTemplate)).contractInstance
     }, 100000);
   
     test('create loan, edit collateral, cancel loan', async () => {
