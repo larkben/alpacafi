@@ -116,6 +116,10 @@ export namespace LoanFactoryTypes {
       }>;
       result: CallContractResult<[bigint, boolean]>;
     };
+    getTime: {
+      params: Omit<CallContractParams<{}>, "args">;
+      result: CallContractResult<bigint>;
+    };
     getRequiredTokens: {
       params: CallContractParams<{
         contractId: HexString;
@@ -229,6 +233,10 @@ export namespace LoanFactoryTypes {
         collateralOracle: boolean;
         threshhold: bigint;
       }>;
+      result: SignExecuteScriptTxResult;
+    };
+    getTime: {
+      params: Omit<SignExecuteContractMethodParams<{}>, "args">;
       result: SignExecuteScriptTxResult;
     };
     getRequiredTokens: {
@@ -388,6 +396,18 @@ class Factory extends ContractFactory<
         params,
         getContractByCodeHash
       );
+    },
+    getTime: async (
+      params: Omit<
+        TestContractParams<
+          LoanFactoryTypes.Fields,
+          never,
+          LoanFactoryTypes.Maps
+        >,
+        "testArgs"
+      >
+    ): Promise<TestContractResult<bigint, LoanFactoryTypes.Maps>> => {
+      return testMethod(this, "getTime", params, getContractByCodeHash);
     },
     getRequiredTokens: async (
       params: TestContractParams<
@@ -586,8 +606,8 @@ class Factory extends ContractFactory<
 export const LoanFactory = new Factory(
   Contract.fromJson(
     LoanFactoryContractJson,
-    "=54-8=1-1+f=3+846=1+c4644=2813-1+6=29-1+4=60+7a7e0214696e73657274206174206d617020706174683a2000=23-1+a=36+7a7e021472656d6f7665206174206d617020706174683a2000=144",
-    "6b03c326acca136f00da47d8e8e93f555873ea19987a91174ad773bb7ee2a6b6",
+    "=57-3+60b=1-2+6=2+4=1-2+38=2-2+50=2837-1+6=29-1+4=60+7a7e0214696e73657274206174206d617020706174683a2000=23-1+a=36+7a7e021472656d6f7665206174206d617020706174683a2000=144",
+    "13649fd936cb3c2108b421e9bc28a3cff8631fe1ca3dc195ae3df7ec6588e576",
     AllStructs
   )
 );
@@ -751,6 +771,17 @@ export class LoanFactoryInstance extends ContractInstance {
         this,
         "determineCollateralRatio",
         params,
+        getContractByCodeHash
+      );
+    },
+    getTime: async (
+      params?: LoanFactoryTypes.CallMethodParams<"getTime">
+    ): Promise<LoanFactoryTypes.CallMethodResult<"getTime">> => {
+      return callMethod(
+        LoanFactory,
+        this,
+        "getTime",
+        params === undefined ? {} : params,
         getContractByCodeHash
       );
     },
@@ -937,6 +968,11 @@ export class LoanFactoryInstance extends ContractInstance {
         "determineCollateralRatio",
         params
       );
+    },
+    getTime: async (
+      params: LoanFactoryTypes.SignExecuteMethodParams<"getTime">
+    ): Promise<LoanFactoryTypes.SignExecuteMethodResult<"getTime">> => {
+      return signExecuteMethod(LoanFactory, this, "getTime", params);
     },
     getRequiredTokens: async (
       params: LoanFactoryTypes.SignExecuteMethodParams<"getRequiredTokens">

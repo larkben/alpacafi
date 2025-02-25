@@ -60,6 +60,10 @@ export namespace AuctionTypes {
   export type State = ContractState<Fields>;
 
   export interface CallMethodTable {
+    blockTimeStamp: {
+      params: Omit<CallContractParams<{}>, "args">;
+      result: CallContractResult<bigint>;
+    };
     calculateFee: {
       params: CallContractParams<{ amount: bigint }>;
       result: CallContractResult<bigint>;
@@ -102,6 +106,10 @@ export namespace AuctionTypes {
   };
 
   export interface SignExecuteMethodTable {
+    blockTimeStamp: {
+      params: Omit<SignExecuteContractMethodParams<{}>, "args">;
+      result: SignExecuteScriptTxResult;
+    };
     calculateFee: {
       params: SignExecuteContractMethodParams<{ amount: bigint }>;
       result: SignExecuteScriptTxResult;
@@ -160,6 +168,14 @@ class Factory extends ContractFactory<AuctionInstance, AuctionTypes.Fields> {
   }
 
   tests = {
+    blockTimeStamp: async (
+      params: Omit<
+        TestContractParamsWithoutMaps<AuctionTypes.Fields, never>,
+        "testArgs"
+      >
+    ): Promise<TestContractResultWithoutMaps<bigint>> => {
+      return testMethod(this, "blockTimeStamp", params, getContractByCodeHash);
+    },
     calculateFee: async (
       params: TestContractParamsWithoutMaps<
         AuctionTypes.Fields,
@@ -226,7 +242,7 @@ export const Auction = new Factory(
   Contract.fromJson(
     AuctionContractJson,
     "",
-    "eb8c255f5e64fbecb63cdcf583bef9ccc3236c7d9251702d5b32fb306d218192",
+    "6a176816bdf88e3f817d925a6a994fea1db65712cf2febea078d7f36aeaae9e0",
     AllStructs
   )
 );
@@ -243,6 +259,17 @@ export class AuctionInstance extends ContractInstance {
   }
 
   view = {
+    blockTimeStamp: async (
+      params?: AuctionTypes.CallMethodParams<"blockTimeStamp">
+    ): Promise<AuctionTypes.CallMethodResult<"blockTimeStamp">> => {
+      return callMethod(
+        Auction,
+        this,
+        "blockTimeStamp",
+        params === undefined ? {} : params,
+        getContractByCodeHash
+      );
+    },
     calculateFee: async (
       params: AuctionTypes.CallMethodParams<"calculateFee">
     ): Promise<AuctionTypes.CallMethodResult<"calculateFee">> => {
@@ -289,6 +316,11 @@ export class AuctionInstance extends ContractInstance {
   };
 
   transact = {
+    blockTimeStamp: async (
+      params: AuctionTypes.SignExecuteMethodParams<"blockTimeStamp">
+    ): Promise<AuctionTypes.SignExecuteMethodResult<"blockTimeStamp">> => {
+      return signExecuteMethod(Auction, this, "blockTimeStamp", params);
+    },
     calculateFee: async (
       params: AuctionTypes.SignExecuteMethodParams<"calculateFee">
     ): Promise<AuctionTypes.SignExecuteMethodResult<"calculateFee">> => {

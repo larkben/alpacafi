@@ -78,6 +78,10 @@ export namespace LoanTypes {
       params: Omit<CallContractParams<{}>, "args">;
       result: CallContractResult<boolean>;
     };
+    blockTimeStamp: {
+      params: Omit<CallContractParams<{}>, "args">;
+      result: CallContractResult<bigint>;
+    };
     isLoanComplete: {
       params: Omit<CallContractParams<{}>, "args">;
       result: CallContractResult<boolean>;
@@ -169,6 +173,10 @@ export namespace LoanTypes {
       result: SignExecuteScriptTxResult;
     };
     canLoanLiquidate: {
+      params: Omit<SignExecuteContractMethodParams<{}>, "args">;
+      result: SignExecuteScriptTxResult;
+    };
+    blockTimeStamp: {
       params: Omit<SignExecuteContractMethodParams<{}>, "args">;
       result: SignExecuteScriptTxResult;
     };
@@ -307,6 +315,14 @@ class Factory extends ContractFactory<LoanInstance, LoanTypes.Fields> {
         getContractByCodeHash
       );
     },
+    blockTimeStamp: async (
+      params: Omit<
+        TestContractParamsWithoutMaps<LoanTypes.Fields, never>,
+        "testArgs"
+      >
+    ): Promise<TestContractResultWithoutMaps<bigint>> => {
+      return testMethod(this, "blockTimeStamp", params, getContractByCodeHash);
+    },
     isLoanComplete: async (
       params: Omit<
         TestContractParamsWithoutMaps<LoanTypes.Fields, never>,
@@ -435,7 +451,7 @@ export const Loan = new Factory(
   Contract.fromJson(
     LoanContractJson,
     "",
-    "fc001ed267de02374c6e638e5227f5a511130b8f0d9bb6701d27b002d96d4c10",
+    "fcedbb18cd77a2f2e57d40cfcac053db447f7506a2109fe2e90b077565dc29e2",
     AllStructs
   )
 );
@@ -481,6 +497,17 @@ export class LoanInstance extends ContractInstance {
         Loan,
         this,
         "canLoanLiquidate",
+        params === undefined ? {} : params,
+        getContractByCodeHash
+      );
+    },
+    blockTimeStamp: async (
+      params?: LoanTypes.CallMethodParams<"blockTimeStamp">
+    ): Promise<LoanTypes.CallMethodResult<"blockTimeStamp">> => {
+      return callMethod(
+        Loan,
+        this,
+        "blockTimeStamp",
         params === undefined ? {} : params,
         getContractByCodeHash
       );
@@ -639,6 +666,11 @@ export class LoanInstance extends ContractInstance {
       params: LoanTypes.SignExecuteMethodParams<"canLoanLiquidate">
     ): Promise<LoanTypes.SignExecuteMethodResult<"canLoanLiquidate">> => {
       return signExecuteMethod(Loan, this, "canLoanLiquidate", params);
+    },
+    blockTimeStamp: async (
+      params: LoanTypes.SignExecuteMethodParams<"blockTimeStamp">
+    ): Promise<LoanTypes.SignExecuteMethodResult<"blockTimeStamp">> => {
+      return signExecuteMethod(Loan, this, "blockTimeStamp", params);
     },
     isLoanComplete: async (
       params: LoanTypes.SignExecuteMethodParams<"isLoanComplete">

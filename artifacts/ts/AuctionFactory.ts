@@ -50,6 +50,7 @@ export namespace AuctionFactoryTypes {
     auctionTemplate: HexString;
     auctionNumber: bigint;
     fee: bigint;
+    oracle: HexString;
   };
 
   export type State = ContractState<Fields>;
@@ -75,6 +76,14 @@ export namespace AuctionFactoryTypes {
   }>;
 
   export interface CallMethodTable {
+    getTime: {
+      params: Omit<CallContractParams<{}>, "args">;
+      result: CallContractResult<bigint>;
+    };
+    blockTimeStamp: {
+      params: Omit<CallContractParams<{}>, "args">;
+      result: CallContractResult<bigint>;
+    };
     createAuction: {
       params: CallContractParams<{
         collateral: HexString;
@@ -139,6 +148,14 @@ export namespace AuctionFactoryTypes {
   };
 
   export interface SignExecuteMethodTable {
+    getTime: {
+      params: Omit<SignExecuteContractMethodParams<{}>, "args">;
+      result: SignExecuteScriptTxResult;
+    };
+    blockTimeStamp: {
+      params: Omit<SignExecuteContractMethodParams<{}>, "args">;
+      result: SignExecuteScriptTxResult;
+    };
     createAuction: {
       params: SignExecuteContractMethodParams<{
         collateral: HexString;
@@ -212,6 +229,22 @@ class Factory extends ContractFactory<
   }
 
   tests = {
+    getTime: async (
+      params: Omit<
+        TestContractParamsWithoutMaps<AuctionFactoryTypes.Fields, never>,
+        "testArgs"
+      >
+    ): Promise<TestContractResultWithoutMaps<bigint>> => {
+      return testMethod(this, "getTime", params, getContractByCodeHash);
+    },
+    blockTimeStamp: async (
+      params: Omit<
+        TestContractParamsWithoutMaps<AuctionFactoryTypes.Fields, never>,
+        "testArgs"
+      >
+    ): Promise<TestContractResultWithoutMaps<bigint>> => {
+      return testMethod(this, "blockTimeStamp", params, getContractByCodeHash);
+    },
     createAuction: async (
       params: TestContractParamsWithoutMaps<
         AuctionFactoryTypes.Fields,
@@ -305,7 +338,7 @@ export const AuctionFactory = new Factory(
   Contract.fromJson(
     AuctionFactoryContractJson,
     "",
-    "92a910144e9958809a33c33730ae15402e2aae773aaf165fba6240b06c09aec6",
+    "67eb5e5ab27bedac66e9091571901335271cbb4e7d023f418e8d66f853a47fdd",
     AllStructs
   )
 );
@@ -381,6 +414,28 @@ export class AuctionFactoryInstance extends ContractInstance {
   }
 
   view = {
+    getTime: async (
+      params?: AuctionFactoryTypes.CallMethodParams<"getTime">
+    ): Promise<AuctionFactoryTypes.CallMethodResult<"getTime">> => {
+      return callMethod(
+        AuctionFactory,
+        this,
+        "getTime",
+        params === undefined ? {} : params,
+        getContractByCodeHash
+      );
+    },
+    blockTimeStamp: async (
+      params?: AuctionFactoryTypes.CallMethodParams<"blockTimeStamp">
+    ): Promise<AuctionFactoryTypes.CallMethodResult<"blockTimeStamp">> => {
+      return callMethod(
+        AuctionFactory,
+        this,
+        "blockTimeStamp",
+        params === undefined ? {} : params,
+        getContractByCodeHash
+      );
+    },
     createAuction: async (
       params: AuctionFactoryTypes.CallMethodParams<"createAuction">
     ): Promise<AuctionFactoryTypes.CallMethodResult<"createAuction">> => {
@@ -467,6 +522,18 @@ export class AuctionFactoryInstance extends ContractInstance {
   };
 
   transact = {
+    getTime: async (
+      params: AuctionFactoryTypes.SignExecuteMethodParams<"getTime">
+    ): Promise<AuctionFactoryTypes.SignExecuteMethodResult<"getTime">> => {
+      return signExecuteMethod(AuctionFactory, this, "getTime", params);
+    },
+    blockTimeStamp: async (
+      params: AuctionFactoryTypes.SignExecuteMethodParams<"blockTimeStamp">
+    ): Promise<
+      AuctionFactoryTypes.SignExecuteMethodResult<"blockTimeStamp">
+    > => {
+      return signExecuteMethod(AuctionFactory, this, "blockTimeStamp", params);
+    },
     createAuction: async (
       params: AuctionFactoryTypes.SignExecuteMethodParams<"createAuction">
     ): Promise<
@@ -526,4 +593,23 @@ export class AuctionFactoryInstance extends ContractInstance {
       );
     },
   };
+
+  async multicall<Calls extends AuctionFactoryTypes.MultiCallParams>(
+    calls: Calls
+  ): Promise<AuctionFactoryTypes.MultiCallResults<Calls>>;
+  async multicall<Callss extends AuctionFactoryTypes.MultiCallParams[]>(
+    callss: Narrow<Callss>
+  ): Promise<AuctionFactoryTypes.MulticallReturnType<Callss>>;
+  async multicall<
+    Callss extends
+      | AuctionFactoryTypes.MultiCallParams
+      | AuctionFactoryTypes.MultiCallParams[]
+  >(callss: Callss): Promise<unknown> {
+    return await multicallMethods(
+      AuctionFactory,
+      this,
+      callss,
+      getContractByCodeHash
+    );
+  }
 }

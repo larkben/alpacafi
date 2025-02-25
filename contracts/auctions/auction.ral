@@ -19,6 +19,15 @@ Contract Auction (
         AuctionNotBidOn = 4
     }
 
+    // for unit testing *custom time manip*
+    pub fn blockTimeStamp() -> (U256) {
+        let time = AuctionFactory(addressToContractId!(parentContract))
+
+        let currentTime = time.getTime()
+
+        return currentTime
+    }
+
     // helper functions
     pub fn calculateFee(amount: U256) -> (U256) {
         if (fee > 0) {
@@ -56,11 +65,11 @@ Contract Auction (
         
         // init condition
         if (timeToEnd == 0) {
-            timeToEnd = blockTimeStamp!() + 300000 // 3 hours till auction end once bid
+            timeToEnd = blockTimeStamp() + 300000 // 3 hours till auction end once bid
         }
 
         // anti sniper
-        if ((timeToEnd - blockTimeStamp!()) < 180000) {
+        if ((timeToEnd - blockTimeStamp()) < 180000) {
             timeToEnd = timeToEnd + 300000 // Add 5 minutes (300,000 ms)
         }
 
@@ -82,7 +91,7 @@ Contract Auction (
         }
 
         // auction has ended
-        assert!(timeToEnd < blockTimeStamp!(), AuctionCodes.AuctionNotDone)
+        assert!(timeToEnd < blockTimeStamp(), AuctionCodes.AuctionNotDone)
         assert!(timeToEnd != 0, AuctionCodes.AuctionNotBidOn)
 
         // get auctionplace fees for liquidations

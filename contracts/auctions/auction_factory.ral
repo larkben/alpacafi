@@ -2,7 +2,8 @@ Contract AuctionFactory (
     admin: Address,
     auctionTemplate: ByteVec,
     mut auctionNumber: U256,
-    mut fee: U256
+    mut fee: U256,
+    oracle: ByteVec
 ) {
     event CreateAuction(
         who: Address, 
@@ -28,6 +29,20 @@ Contract AuctionFactory (
 		NotAdmin = 0
     }
 
+    // for unit testing *custom time manip*
+    pub fn getTime() -> (U256) {
+        let time = TestOracle(oracle).getTime()
+
+        return time
+    }
+
+    // for unit testing *custom time manip*
+    pub fn blockTimeStamp() -> (U256) {
+        let time = TestOracle(oracle).getTime()
+
+        return time
+    }
+
     @using(checkExternalCaller = false, preapprovedAssets = true, assetsInContract = true, updateFields = true)
     pub fn createAuction(collateral: ByteVec, collateralAmount: U256, tokenRequested: ByteVec, tokenAmount: U256, loaner: Address) -> () {
 
@@ -46,7 +61,7 @@ Contract AuctionFactory (
             0                   // no time until bid is placed
         )
 
-        let time = blockTimeStamp!()
+        let time = blockTimeStamp()
         let value = encodeToByteVec!(time, caller, auctionNumber)
         
         // work on this bit

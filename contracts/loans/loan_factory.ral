@@ -20,7 +20,7 @@ Contract LoanFactory (
     auctionHouse: ByteVec,
     mut activeLoans: U256,
     mut rate: U256,
-    oracle: IDIAOracle,
+    oracle: ByteVec,
     alpaca: ByteVec
 ) {
     mapping [ByteVec, PairInfo] tokenPairs
@@ -97,7 +97,7 @@ Contract LoanFactory (
 
             // fetch token price
             if (tokenOracle) {
-                loanValue = oracle.getValue(tokenPairs[tokenRequested].pair).value
+                loanValue = TestOracle(oracle).getValue(tokenPairs[tokenRequested].pair).value
             }
             else {
                 loanValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[tokenRequested].pair).value
@@ -105,7 +105,7 @@ Contract LoanFactory (
 
             // fetch collateral price
             if (collateralOracle) {
-                collateralValue = oracle.getValue(tokenPairs[collateralToken].pair).value
+                collateralValue = TestOracle(oracle).getValue(tokenPairs[collateralToken].pair).value
             }
             else {
                 collateralValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[collateralToken].pair).value
@@ -139,6 +139,13 @@ Contract LoanFactory (
         }
 
         return 0, false
+    }
+
+    // for unit testing *custom time manip*
+    pub fn getTime() -> (U256) {
+        let time = TestOracle(oracle).getTime()
+
+        return time
     }
 
     pub fn getRequiredTokens(contractId: ByteVec, withInterest: Bool) -> (ByteVec, U256) {

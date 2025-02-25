@@ -51,13 +51,14 @@ export async function deployAuctionTemplate() {
 }
 
 // auction factory template
-export async function deployAuctionFactory(auctionTemplate: LoanInstance) {
+export async function deployAuctionFactory(auctionTemplate: LoanInstance, oracleTemplate: TestOracleInstance) {
     return await AuctionFactory.deploy(defaultSigner, {
       initialFields: {
           admin: defaultSigner.account.address,
           auctionTemplate: auctionTemplate.contractId,
           auctionNumber: 0n,
-          fee: 300n
+          fee: 300n,
+          oracle: oracleTemplate.contractId
       },
     });
 }

@@ -37,13 +37,22 @@ Contract Loan (
         return canLiquidate
     }
 
+    // for unit testing *custom time manip*
+    pub fn blockTimeStamp() -> (U256) {
+        let time = LoanFactory(addressToContractId!(parentContract))
+
+        let currentTime = time.getTime()
+
+        return currentTime
+    }
+
     // update ratio function needs to be added
 
     pub fn isLoanComplete() -> (Bool) {
         assert!(active == true, 1)
 
         // confirm the loan has completed it's time
-        assert!(blockTimeStamp!() > startTime + duration, 0)
+        assert!(blockTimeStamp() > startTime + duration, 0)
 
         return true
     }
@@ -51,7 +60,7 @@ Contract Loan (
     pub fn getInterest() -> (U256) {
         if (interest > 0) {
             // Calculate elapsed time
-            let elapsedTime = blockTimeStamp!() - startTime
+            let elapsedTime = blockTimeStamp() - startTime
     
             // Avoid integer truncation: multiply first, then divide
             let gain = (tokenAmount * interest * elapsedTime) / (31556926000 * 10000)
@@ -88,7 +97,7 @@ Contract Loan (
 
         active = true
 
-        startTime = blockTimeStamp!()
+        startTime = blockTimeStamp()
 
         lender = acceptor
 
@@ -122,7 +131,7 @@ Contract Loan (
         assert!(active == true, 2)
 
         // loan has expired
-        assert!(startTime + duration > blockTimeStamp!(), 4)
+        assert!(startTime + duration > blockTimeStamp(), 4)
 
         // transfer back assets plus the interest
         let totalPayment = getInterest()
@@ -145,7 +154,7 @@ Contract Loan (
         checkCaller!(callerAddress!() == parentContract, 0)
 
         assert!(active, 3)
-        assert!(startTime + duration < blockTimeStamp!(), 4)
+        assert!(startTime + duration < blockTimeStamp(), 4)
 
         if (!canLiquidate) {
             let totalCommission = getCommission(collateralAmount)
@@ -223,7 +232,6 @@ Contract Loan (
     pub fn activateLiquidation(collateralLevel: U256) -> () {
         checkCaller!(callerAddress!() == parentContract, 0)
 
-        // Call the auction contract here @larkben
         let auction = AuctionFactory(auctionContract)
 
         // Gonna wanna take the APS to 0.3 alphs to alleviate these changes @larkben
