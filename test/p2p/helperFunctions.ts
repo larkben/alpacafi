@@ -16,7 +16,7 @@ const nodeProvider = new NodeProvider('http://127.0.0.1:22973')
 // get the contract created
 export async function getContractCreated(tx: string): Promise<string>{
     let details = await nodeProvider.transactions.getTransactionsDetailsTxid(tx)
-    console.log(details)
+    //console.log(details)
 
     const u8int = contractIdFromAddress(details.generatedOutputs[0].address)
     const hexString = Array.from(u8int, byte => byte.toString(16).padStart(2, '0')).join('');

@@ -254,7 +254,7 @@ export async function TokenMappingService (
           loanFactory: loanFactory.contractId,
           token: token,
           add: add,
-          pairtoken: pairtoken,
+          pairtoken: stringToHex(pairtoken),
           decimals: decimals,
           alephiumOracle: alephiumOracle
       },

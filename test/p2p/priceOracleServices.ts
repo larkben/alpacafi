@@ -66,7 +66,7 @@ export async function AddPairService (
       oracle: oracle.contractId,
       pair: stringToHex(pair)
     },
-    attoAlphAmount: DUST_AMOUNT
+    attoAlphAmount: DUST_AMOUNT + MINIMAL_CONTRACT_DEPOSIT
   });
 }
 
@@ -82,6 +82,6 @@ export async function UpdateValueService (
       pair: stringToHex(pair),
       value: value
     },
-    attoAlphAmount: DUST_AMOUNT + MINIMAL_CONTRACT_DEPOSIT
+    attoAlphAmount: DUST_AMOUNT
   });
 }
