@@ -370,12 +370,12 @@ Contract LoanFactory (
             0
         )
 
-        let _ = loan.addCollateral{caller -> collateral: amount, ALPH: dustAmount!() * 2}(caller, amount, ratio)
+        let _ = loan.addCollateral{caller -> collateral: amount, ALPH: dustAmount!()}(caller, amount, ratio)
 
         emit AddCollateralLoan(contractId, caller, collateral, collateralAmount + amount)
     }
 
-    @using(checkExternalCaller = false, updateFields = false, preapprovedAssets = false, assetsInContract = enforced)
+    @using(checkExternalCaller = false, updateFields = false, preapprovedAssets = true, assetsInContract = enforced)
     pub fn removeCollateral(contractId: ByteVec, amount: U256) -> () {
         let loan = Loan(contractId)
 
@@ -399,7 +399,7 @@ Contract LoanFactory (
 
         assert!(ratio > 15000, 1) // prevent falling into liquidation
 
-        let _ = loan.removeCollateral(caller, amount, ratio)
+        let _ = loan.removeCollateral{callerAddress!() -> ALPH: dustAmount!()}(caller, amount, ratio)
 
         emit RemoveCollateralLoan(contractId, caller, collateral, collateralAmount - amount)
     }
@@ -515,7 +515,7 @@ TxScript AddCollateral (
 ) {
     let (token, _) = Loan(contractId).getTokenCollateral()
 
-    loanFactory.addCollateral{callerAddress!() -> token: amount, ALPH: dustAmount!() * 2}(contractId, amount)
+    loanFactory.addCollateral{callerAddress!() -> token: amount, ALPH: dustAmount!()}(contractId, amount)
 }
 
 TxScript RemoveCollateral (
@@ -525,7 +525,7 @@ TxScript RemoveCollateral (
 ) {
     let (token, _) = Loan(contractId).getTokenCollateral()
 
-    loanFactory.removeCollateral(contractId, amount)
+    loanFactory.removeCollateral{callerAddress!() -> ALPH: dustAmount!()}(contractId, amount)
 }
 
 TxScript LiquidationLoan (

@@ -207,7 +207,7 @@ Contract Loan (
         return collateralAmount
     }
 
-    @using(checkExternalCaller = true, preapprovedAssets = false, assetsInContract = true, updateFields = true)
+    @using(checkExternalCaller = true, preapprovedAssets = true, assetsInContract = true, updateFields = true)
     pub fn removeCollateral(caller: Address, collateralRemoved: U256, newRatio: U256) -> (U256) {
         checkCaller!(callerAddress!() == parentContract, 0)
 
@@ -217,7 +217,8 @@ Contract Loan (
         // cannot remove if the loan is active
         assert!(active == false, 7)
 
-        // transfer additional collateral to offset liquidation
+        transferToken!(caller, selfAddress!(), ALPH, dustAmount!())
+
         transferToken!(selfAddress!(), borrower, ALPH, dustAmount!())
         transferToken!(selfAddress!(), borrower, collateralToken, collateralRemoved)
         collateralAmount = collateralAmount - collateralRemoved

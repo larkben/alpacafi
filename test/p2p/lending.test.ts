@@ -13,7 +13,7 @@ import { randomP2PKHAddress, alph, defaultSigner, getContractCreated, getPrecise
 import { AddPair, AuctionFactoryInstance, AuctionInstance, LoanFactoryInstance, LoanInstance, TestOracleInstance } from "../../artifacts/ts";
 import { AddPairService, deployTestOracle, EditOracleTime, UpdateValueService } from "./priceOracleServices";
 import { deployAuctionFactory, deployAuctionTemplate } from "./auctionFactoryServices";
-import { AddCollateralService, CreateLoanService, deployLoanFactory, deployLoanTemplate, RemoveCollateralService, TokenMappingService } from "./loanFactoryServices";
+import { AcceptLoanService, AddCollateralService, CancelLoanService, CreateLoanService, deployLoanFactory, deployLoanTemplate, RemoveCollateralService, TokenMappingService } from "./loanFactoryServices";
 import { assert } from "console";
   
 const nodeProvider = new NodeProvider("http://127.0.0.1:22973");
@@ -71,7 +71,6 @@ describe("lending p2p coverage + tests", () => {
       // edit collateral
 
       let loanBalance = await getPreciseALPHBalance(addressFromContractId(loan))
-      //console.log(loanBalance)
 
       await AddCollateralService(creator, loanFactoryTemplate, loan, ALPH_TOKEN_ID, ONE_ALPH)
 
@@ -79,26 +78,47 @@ describe("lending p2p coverage + tests", () => {
       
       expect(loanBalance).toEqual("13301000000000000000")
 
-      // would the user be able to continually remove collateral despite not having any dust left?
       await RemoveCollateralService(creator, loanFactoryTemplate, loan, ONE_ALPH)
 
       loanBalance = await getPreciseALPHBalance(addressFromContractId(loan))
 
-      // removes 1 dustAmount!()
-      expect(loanBalance).toEqual("12300000000000000000")
-        
+      expect(loanBalance).toEqual("12301000000000000000")
+
+      await RemoveCollateralService(creator, loanFactoryTemplate, loan, ONE_ALPH)
+
+      loanBalance = await getPreciseALPHBalance(addressFromContractId(loan))
+
+      expect(loanBalance).toEqual("11301000000000000000")
+
+      // loan is canceled
+      await CancelLoanService(creator, loanFactoryTemplate, loan)
     })
 
-    /*
     test('create loan, accept loan, repay loan, check fees', async () => {
       const creator = buyer[0]
       const spender = buyer[1]
 
-      
-    
-        
+      await EditOracleTime(defaultSigner, oracleTemplate, 1740500535000)
+
+      let tx = await CreateLoanService(
+        creator, 
+        loanFactoryTemplate, 
+        ALPH_TOKEN_ID, 
+        ONE_ALPH * 5n, 
+        ALPH_TOKEN_ID, 
+        ONE_ALPH * 12n, 
+        1000n, 
+        360000n, 
+        true
+      )
+
+      let loan = await getContractCreated(tx.txId)
+
+      await AcceptLoanService(spender, loanFactoryTemplate, loan, ALPH_TOKEN_ID, ONE_ALPH * 5n)
+
     })
 
+    /*
     test('create loan, accept loan, forfeit, auction, bid redeem', async () => {
       const creator = buyer[0]
       const spender = buyer[1]

@@ -180,7 +180,7 @@ export async function AddCollateralService (
           contractId: loan,
           amount: amount
       },
-      attoAlphAmount: DUST_AMOUNT *3n,
+      attoAlphAmount: DUST_AMOUNT * 2n,
       tokens: [{id: token, amount: amount}]
     });
 }
@@ -197,7 +197,7 @@ export async function RemoveCollateralService (
           contractId: loan,
           amount: amount
       },
-      attoAlphAmount: DUST_AMOUNT
+      attoAlphAmount: DUST_AMOUNT * 2n
     });
 }
 
