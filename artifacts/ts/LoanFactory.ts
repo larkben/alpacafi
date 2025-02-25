@@ -35,7 +35,13 @@ import {
 } from "@alephium/web3";
 import { default as LoanFactoryContractJson } from "../loans/LoanFactory.ral.json";
 import { getContractByCodeHash, registerContract } from "./contracts";
-import { DIAOracleValue, OracleData, PairInfo, AllStructs } from "./types";
+import {
+  DIAOracleValue,
+  OracleData,
+  PairInfo,
+  TokenData,
+  AllStructs,
+} from "./types";
 import { RalphMap } from "@alephium/web3";
 
 // Custom types for the contract

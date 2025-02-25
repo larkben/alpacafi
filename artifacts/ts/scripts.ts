@@ -14,11 +14,13 @@ import {
 import { getContractByCodeHash } from "./contracts";
 import { default as AcceptLoanScriptJson } from "../loans/AcceptLoan.ral.json";
 import { default as AddCollateralScriptJson } from "../loans/AddCollateral.ral.json";
+import { default as AddPairScriptJson } from "../test-contracts/AddPair.ral.json";
 import { default as BidScriptJson } from "../auctions/Bid.ral.json";
 import { default as BorrowScriptJson } from "../pool-lending/Borrow.ral.json";
 import { default as CancelLoanScriptJson } from "../loans/CancelLoan.ral.json";
 import { default as CreateLoanScriptJson } from "../loans/CreateLoan.ral.json";
 import { default as CreateStablePoolScriptJson } from "../pool-lending/CreateStablePool.ral.json";
+import { default as CreateTokenScriptJson } from "../test-contracts/CreateToken.ral.json";
 import { default as DepositScriptJson } from "../pool-lending/Deposit.ral.json";
 import { default as EditLoanRateScriptJson } from "../loans/EditLoanRate.ral.json";
 import { default as ForceCancelScriptJson } from "../loans/ForceCancel.ral.json";
@@ -46,10 +48,18 @@ import { default as UpdateLoanFactoryFieldsScriptJson } from "../loans/UpdateLoa
 import { default as UpdateLoanFieldsScriptJson } from "../loans/UpdateLoanFields.ral.json";
 import { default as UpdateOracleCodeScriptJson } from "../oracle/UpdateOracleCode.ral.json";
 import { default as UpdatePairScriptJson } from "../oracle/UpdatePair.ral.json";
+import { default as UpdateTimeScriptJson } from "../test-contracts/UpdateTime.ral.json";
+import { default as UpdateValueScriptJson } from "../test-contracts/UpdateValue.ral.json";
 import { default as WithdrawScriptJson } from "../pool-lending/Withdraw.ral.json";
 import { default as WithdrawAuctionFactoryFeesScriptJson } from "../auctions/WithdrawAuctionFactoryFees.ral.json";
 import { default as WithdrawLoanFactoryFeesScriptJson } from "../loans/WithdrawLoanFactoryFees.ral.json";
-import { DIAOracleValue, OracleData, PairInfo, AllStructs } from "./types";
+import {
+  DIAOracleValue,
+  OracleData,
+  PairInfo,
+  TokenData,
+  AllStructs,
+} from "./types";
 
 export const AcceptLoan = new ExecutableScript<{
   loanFactory: HexString;
@@ -67,6 +77,11 @@ export const AddCollateral = new ExecutableScript<{
   Script.fromJson(AddCollateralScriptJson, "", AllStructs),
   getContractByCodeHash
 );
+
+export const AddPair = new ExecutableScript<{
+  oracle: HexString;
+  pair: HexString;
+}>(Script.fromJson(AddPairScriptJson, "", AllStructs), getContractByCodeHash);
 
 export const Bid = new ExecutableScript<{
   contract: HexString;
@@ -120,6 +135,18 @@ export const CreateStablePool = new ExecutableScript<{
   oracle: HexString;
 }>(
   Script.fromJson(CreateStablePoolScriptJson, "", AllStructs),
+  getContractByCodeHash
+);
+
+export const CreateToken = new ExecutableScript<{
+  tokenCode: HexString;
+  symbol: HexString;
+  name: HexString;
+  decimals: bigint;
+  supply: bigint;
+  owner: Address;
+}>(
+  Script.fromJson(CreateTokenScriptJson, "", AllStructs),
   getContractByCodeHash
 );
 
@@ -340,6 +367,23 @@ export const UpdatePair = new ExecutableScript<{
   price: bigint;
 }>(
   Script.fromJson(UpdatePairScriptJson, "", AllStructs),
+  getContractByCodeHash
+);
+
+export const UpdateTime = new ExecutableScript<{
+  oracle: HexString;
+  time: bigint;
+}>(
+  Script.fromJson(UpdateTimeScriptJson, "", AllStructs),
+  getContractByCodeHash
+);
+
+export const UpdateValue = new ExecutableScript<{
+  oracle: HexString;
+  pair: HexString;
+  value: bigint;
+}>(
+  Script.fromJson(UpdateValueScriptJson, "", AllStructs),
   getContractByCodeHash
 );
 

@@ -1,0 +1,40 @@
+{
+  "version": "v3.11.1",
+  "name": "CreateToken",
+  "bytecodeTemplate": "01010300030016{1}{2}{3}{4}{5}1406414c5048000113066413006417011700b4d1a2{0}16001601{4}{5}c61702",
+  "fieldsSig": {
+    "names": [
+      "tokenCode",
+      "symbol",
+      "name",
+      "decimals",
+      "supply",
+      "owner"
+    ],
+    "types": [
+      "ByteVec",
+      "ByteVec",
+      "ByteVec",
+      "U256",
+      "U256",
+      "Address"
+    ],
+    "isMutable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "functions": [
+    {
+      "name": "main",
+      "paramNames": [],
+      "paramTypes": [],
+      "paramIsMutable": [],
+      "returnTypes": []
+    }
+  ]
+}

@@ -1,14 +1,14 @@
 {
   "version": "v3.11.1",
-  "name": "MintSupply",
-  "bytecodeTemplate": "01010300010008b417001600{1}0e0c{0}0104",
+  "name": "UpdateTime",
+  "bytecodeTemplate": "01010300000005{1}0d0c{0}0103",
   "fieldsSig": {
     "names": [
-      "contract",
-      "amount"
+      "oracle",
+      "time"
     ],
     "types": [
-      "TokenTest",
+      "TestOracle",
       "U256"
     ],
     "isMutable": [

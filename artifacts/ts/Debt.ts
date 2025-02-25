@@ -35,7 +35,13 @@ import {
 } from "@alephium/web3";
 import { default as DebtContractJson } from "../pool-lending/Debt.ral.json";
 import { getContractByCodeHash, registerContract } from "./contracts";
-import { DIAOracleValue, OracleData, PairInfo, AllStructs } from "./types";
+import {
+  DIAOracleValue,
+  OracleData,
+  PairInfo,
+  TokenData,
+  AllStructs,
+} from "./types";
 
 // Custom types for the contract
 export namespace DebtTypes {

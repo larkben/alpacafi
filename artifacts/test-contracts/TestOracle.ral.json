@@ -1,0 +1,96 @@
+{
+  "version": "v3.11.1",
+  "name": "TestOracle",
+  "bytecode": "0105403a407140ac40bb40c9010001020115d3c07e0e13140a5f5f6d61705f5f305f5f160044cbc5031c0d7b0c0d0d140a5f5f6d61705f5f305f5f160044cb01011701160102010002020013d355f49902140a5f5f6d61705f5f305f5f160044cbc5031c0d7b16010c0e0c140a5f5f6d61705f5f305f5f160044cb0102010301020015d374cc66f9140a5f5f6d61705f5f305f5f160044cbc5041c0e7b0c1701b4d1a2140a5f5f6d61705f5f305f5f160044b11601d20101010001010003d344927d761600a100010000000103d3a7a9c713a00002",
+  "codeHash": "f9f89cd691b9fd0459021bbaf35f9e9b3f4ed5d5c940f9c88b7a0b98dadf2769",
+  "fieldsSig": {
+    "names": [
+      "currentTime"
+    ],
+    "types": [
+      "U256"
+    ],
+    "isMutable": [
+      true
+    ]
+  },
+  "eventsSig": [],
+  "functions": [
+    {
+      "name": "getValue",
+      "paramNames": [
+        "pair"
+      ],
+      "paramTypes": [
+        "ByteVec"
+      ],
+      "paramIsMutable": [
+        false
+      ],
+      "returnTypes": [
+        "TokenData"
+      ]
+    },
+    {
+      "name": "updateValue",
+      "paramNames": [
+        "pair",
+        "newValue"
+      ],
+      "paramTypes": [
+        "ByteVec",
+        "U256"
+      ],
+      "paramIsMutable": [
+        false,
+        false
+      ],
+      "returnTypes": []
+    },
+    {
+      "name": "addPair",
+      "paramNames": [
+        "pair"
+      ],
+      "paramTypes": [
+        "ByteVec"
+      ],
+      "paramIsMutable": [
+        false
+      ],
+      "returnTypes": []
+    },
+    {
+      "name": "updateTime",
+      "paramNames": [
+        "newTime"
+      ],
+      "paramTypes": [
+        "U256"
+      ],
+      "paramIsMutable": [
+        false
+      ],
+      "returnTypes": []
+    },
+    {
+      "name": "getTime",
+      "paramNames": [],
+      "paramTypes": [],
+      "paramIsMutable": [],
+      "returnTypes": [
+        "U256"
+      ]
+    }
+  ],
+  "constants": [],
+  "enums": [],
+  "mapsSig": {
+    "names": [
+      "prices"
+    ],
+    "types": [
+      "Map[ByteVec,TokenData]"
+    ]
+  }
+}

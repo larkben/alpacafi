@@ -19,3 +19,6 @@ export interface PairInfo extends Record<string, Val> {
   decimals: bigint;
   oracle: boolean;
 }
+export interface TokenData extends Record<string, Val> {
+  value: bigint;
+}

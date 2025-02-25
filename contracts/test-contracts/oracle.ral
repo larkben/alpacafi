@@ -1,0 +1,68 @@
+struct TokenData {
+    mut value: U256
+}
+
+Contract TestOracle (
+    mut currentTime: U256
+) {
+    mapping [ByteVec, TokenData] prices
+
+    @using(checkExternalCaller = false)
+    pub fn getValue(pair: ByteVec) -> (TokenData) {
+        assert!(prices.contains!(pair) == true, 1)
+
+        let b = prices[pair]
+
+        return b
+    }
+
+    @using(checkExternalCaller = false)
+    pub fn updateValue(pair: ByteVec, newValue: U256) -> () {
+        assert!(prices.contains!(pair) == true, 1)
+
+        prices[pair].value = newValue
+    }
+
+    @using(checkExternalCaller = false, preapprovedAssets = true)
+    pub fn addPair(pair: ByteVec) -> () {
+        assert!(prices.contains!(pair) == false, 2)
+
+        let b = TokenData {
+            value: 0
+        }
+
+        prices.insert!(callerAddress!(), pair, b)
+    }
+
+    @using(checkExternalCaller = false, updateFields = true)
+    pub fn updateTime(newTime: U256) -> () {
+        currentTime = newTime
+    }
+
+    @using(checkExternalCaller = false)
+    pub fn getTime() -> (U256) {
+        return currentTime
+    }
+}
+
+TxScript UpdateValue (
+    oracle: TestOracle,
+    pair: ByteVec,
+    value: U256
+) {
+    oracle.updateValue(pair, value)
+}
+
+TxScript AddPair (
+    oracle: TestOracle,
+    pair: ByteVec
+) {
+    oracle.addPair{callerAddress!() -> ALPH: mapEntryDeposit!()}(pair)
+}
+
+TxScript UpdateTime (
+    oracle: TestOracle,
+    time: U256
+) {
+    oracle.updateTime(time)
+}

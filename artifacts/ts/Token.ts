@@ -33,7 +33,7 @@ import {
   encodeContractFields,
   Narrow,
 } from "@alephium/web3";
-import { default as TokenTestContractJson } from "../test-contracts/TokenTest.ral.json";
+import { default as TokenContractJson } from "../test-contracts/Token.ral.json";
 import { getContractByCodeHash, registerContract } from "./contracts";
 import {
   DIAOracleValue,
@@ -44,11 +44,13 @@ import {
 } from "./types";
 
 // Custom types for the contract
-export namespace TokenTestTypes {
+export namespace TokenTypes {
   export type Fields = {
-    name: HexString;
     symbol: HexString;
+    name: HexString;
+    decimals: bigint;
     supply: bigint;
+    owner: Address;
   };
 
   export type State = ContractState<Fields>;
@@ -70,9 +72,9 @@ export namespace TokenTestTypes {
       params: Omit<CallContractParams<{}>, "args">;
       result: CallContractResult<bigint>;
     };
-    mintSupply: {
-      params: CallContractParams<{ caller: Address; amount: bigint }>;
-      result: CallContractResult<null>;
+    getOwner: {
+      params: Omit<CallContractParams<{}>, "args">;
+      result: CallContractResult<Address>;
     };
   }
   export type CallMethodParams<T extends keyof CallMethodTable> =
@@ -108,11 +110,8 @@ export namespace TokenTestTypes {
       params: Omit<SignExecuteContractMethodParams<{}>, "args">;
       result: SignExecuteScriptTxResult;
     };
-    mintSupply: {
-      params: SignExecuteContractMethodParams<{
-        caller: Address;
-        amount: bigint;
-      }>;
+    getOwner: {
+      params: Omit<SignExecuteContractMethodParams<{}>, "args">;
       result: SignExecuteScriptTxResult;
     };
   }
@@ -122,11 +121,8 @@ export namespace TokenTestTypes {
     SignExecuteMethodTable[T]["result"];
 }
 
-class Factory extends ContractFactory<
-  TokenTestInstance,
-  TokenTestTypes.Fields
-> {
-  encodeFields(fields: TokenTestTypes.Fields) {
+class Factory extends ContractFactory<TokenInstance, TokenTypes.Fields> {
+  encodeFields(fields: TokenTypes.Fields) {
     return encodeContractFields(
       addStdIdToFields(this.contract, fields),
       this.contract.fieldsSig,
@@ -134,14 +130,14 @@ class Factory extends ContractFactory<
     );
   }
 
-  at(address: string): TokenTestInstance {
-    return new TokenTestInstance(address);
+  at(address: string): TokenInstance {
+    return new TokenInstance(address);
   }
 
   tests = {
     getSymbol: async (
       params: Omit<
-        TestContractParamsWithoutMaps<TokenTestTypes.Fields, never>,
+        TestContractParamsWithoutMaps<TokenTypes.Fields, never>,
         "testArgs"
       >
     ): Promise<TestContractResultWithoutMaps<HexString>> => {
@@ -149,7 +145,7 @@ class Factory extends ContractFactory<
     },
     getName: async (
       params: Omit<
-        TestContractParamsWithoutMaps<TokenTestTypes.Fields, never>,
+        TestContractParamsWithoutMaps<TokenTypes.Fields, never>,
         "testArgs"
       >
     ): Promise<TestContractResultWithoutMaps<HexString>> => {
@@ -157,7 +153,7 @@ class Factory extends ContractFactory<
     },
     getDecimals: async (
       params: Omit<
-        TestContractParamsWithoutMaps<TokenTestTypes.Fields, never>,
+        TestContractParamsWithoutMaps<TokenTypes.Fields, never>,
         "testArgs"
       >
     ): Promise<TestContractResultWithoutMaps<bigint>> => {
@@ -165,58 +161,54 @@ class Factory extends ContractFactory<
     },
     getTotalSupply: async (
       params: Omit<
-        TestContractParamsWithoutMaps<TokenTestTypes.Fields, never>,
+        TestContractParamsWithoutMaps<TokenTypes.Fields, never>,
         "testArgs"
       >
     ): Promise<TestContractResultWithoutMaps<bigint>> => {
       return testMethod(this, "getTotalSupply", params, getContractByCodeHash);
     },
-    mintSupply: async (
-      params: TestContractParamsWithoutMaps<
-        TokenTestTypes.Fields,
-        { caller: Address; amount: bigint }
+    getOwner: async (
+      params: Omit<
+        TestContractParamsWithoutMaps<TokenTypes.Fields, never>,
+        "testArgs"
       >
-    ): Promise<TestContractResultWithoutMaps<null>> => {
-      return testMethod(this, "mintSupply", params, getContractByCodeHash);
+    ): Promise<TestContractResultWithoutMaps<Address>> => {
+      return testMethod(this, "getOwner", params, getContractByCodeHash);
     },
   };
 
-  stateForTest(
-    initFields: TokenTestTypes.Fields,
-    asset?: Asset,
-    address?: string
-  ) {
+  stateForTest(initFields: TokenTypes.Fields, asset?: Asset, address?: string) {
     return this.stateForTest_(initFields, asset, address, undefined);
   }
 }
 
 // Use this object to test and deploy the contract
-export const TokenTest = new Factory(
+export const Token = new Factory(
   Contract.fromJson(
-    TokenTestContractJson,
+    TokenContractJson,
     "",
-    "7a92239d40bacc903144594d67621dad48faf5e2bc938bfeb087df697115e3eb",
+    "215fe6aae7ba67810780a11c1f098f7845593d41f36aa7b99c737e2021b33c7b",
     AllStructs
   )
 );
-registerContract(TokenTest);
+registerContract(Token);
 
 // Use this class to interact with the blockchain
-export class TokenTestInstance extends ContractInstance {
+export class TokenInstance extends ContractInstance {
   constructor(address: Address) {
     super(address);
   }
 
-  async fetchState(): Promise<TokenTestTypes.State> {
-    return fetchContractState(TokenTest, this);
+  async fetchState(): Promise<TokenTypes.State> {
+    return fetchContractState(Token, this);
   }
 
   view = {
     getSymbol: async (
-      params?: TokenTestTypes.CallMethodParams<"getSymbol">
-    ): Promise<TokenTestTypes.CallMethodResult<"getSymbol">> => {
+      params?: TokenTypes.CallMethodParams<"getSymbol">
+    ): Promise<TokenTypes.CallMethodResult<"getSymbol">> => {
       return callMethod(
-        TokenTest,
+        Token,
         this,
         "getSymbol",
         params === undefined ? {} : params,
@@ -224,10 +216,10 @@ export class TokenTestInstance extends ContractInstance {
       );
     },
     getName: async (
-      params?: TokenTestTypes.CallMethodParams<"getName">
-    ): Promise<TokenTestTypes.CallMethodResult<"getName">> => {
+      params?: TokenTypes.CallMethodParams<"getName">
+    ): Promise<TokenTypes.CallMethodResult<"getName">> => {
       return callMethod(
-        TokenTest,
+        Token,
         this,
         "getName",
         params === undefined ? {} : params,
@@ -235,10 +227,10 @@ export class TokenTestInstance extends ContractInstance {
       );
     },
     getDecimals: async (
-      params?: TokenTestTypes.CallMethodParams<"getDecimals">
-    ): Promise<TokenTestTypes.CallMethodResult<"getDecimals">> => {
+      params?: TokenTypes.CallMethodParams<"getDecimals">
+    ): Promise<TokenTypes.CallMethodResult<"getDecimals">> => {
       return callMethod(
-        TokenTest,
+        Token,
         this,
         "getDecimals",
         params === undefined ? {} : params,
@@ -246,24 +238,24 @@ export class TokenTestInstance extends ContractInstance {
       );
     },
     getTotalSupply: async (
-      params?: TokenTestTypes.CallMethodParams<"getTotalSupply">
-    ): Promise<TokenTestTypes.CallMethodResult<"getTotalSupply">> => {
+      params?: TokenTypes.CallMethodParams<"getTotalSupply">
+    ): Promise<TokenTypes.CallMethodResult<"getTotalSupply">> => {
       return callMethod(
-        TokenTest,
+        Token,
         this,
         "getTotalSupply",
         params === undefined ? {} : params,
         getContractByCodeHash
       );
     },
-    mintSupply: async (
-      params: TokenTestTypes.CallMethodParams<"mintSupply">
-    ): Promise<TokenTestTypes.CallMethodResult<"mintSupply">> => {
+    getOwner: async (
+      params?: TokenTypes.CallMethodParams<"getOwner">
+    ): Promise<TokenTypes.CallMethodResult<"getOwner">> => {
       return callMethod(
-        TokenTest,
+        Token,
         this,
-        "mintSupply",
-        params,
+        "getOwner",
+        params === undefined ? {} : params,
         getContractByCodeHash
       );
     },
@@ -271,48 +263,41 @@ export class TokenTestInstance extends ContractInstance {
 
   transact = {
     getSymbol: async (
-      params: TokenTestTypes.SignExecuteMethodParams<"getSymbol">
-    ): Promise<TokenTestTypes.SignExecuteMethodResult<"getSymbol">> => {
-      return signExecuteMethod(TokenTest, this, "getSymbol", params);
+      params: TokenTypes.SignExecuteMethodParams<"getSymbol">
+    ): Promise<TokenTypes.SignExecuteMethodResult<"getSymbol">> => {
+      return signExecuteMethod(Token, this, "getSymbol", params);
     },
     getName: async (
-      params: TokenTestTypes.SignExecuteMethodParams<"getName">
-    ): Promise<TokenTestTypes.SignExecuteMethodResult<"getName">> => {
-      return signExecuteMethod(TokenTest, this, "getName", params);
+      params: TokenTypes.SignExecuteMethodParams<"getName">
+    ): Promise<TokenTypes.SignExecuteMethodResult<"getName">> => {
+      return signExecuteMethod(Token, this, "getName", params);
     },
     getDecimals: async (
-      params: TokenTestTypes.SignExecuteMethodParams<"getDecimals">
-    ): Promise<TokenTestTypes.SignExecuteMethodResult<"getDecimals">> => {
-      return signExecuteMethod(TokenTest, this, "getDecimals", params);
+      params: TokenTypes.SignExecuteMethodParams<"getDecimals">
+    ): Promise<TokenTypes.SignExecuteMethodResult<"getDecimals">> => {
+      return signExecuteMethod(Token, this, "getDecimals", params);
     },
     getTotalSupply: async (
-      params: TokenTestTypes.SignExecuteMethodParams<"getTotalSupply">
-    ): Promise<TokenTestTypes.SignExecuteMethodResult<"getTotalSupply">> => {
-      return signExecuteMethod(TokenTest, this, "getTotalSupply", params);
+      params: TokenTypes.SignExecuteMethodParams<"getTotalSupply">
+    ): Promise<TokenTypes.SignExecuteMethodResult<"getTotalSupply">> => {
+      return signExecuteMethod(Token, this, "getTotalSupply", params);
     },
-    mintSupply: async (
-      params: TokenTestTypes.SignExecuteMethodParams<"mintSupply">
-    ): Promise<TokenTestTypes.SignExecuteMethodResult<"mintSupply">> => {
-      return signExecuteMethod(TokenTest, this, "mintSupply", params);
+    getOwner: async (
+      params: TokenTypes.SignExecuteMethodParams<"getOwner">
+    ): Promise<TokenTypes.SignExecuteMethodResult<"getOwner">> => {
+      return signExecuteMethod(Token, this, "getOwner", params);
     },
   };
 
-  async multicall<Calls extends TokenTestTypes.MultiCallParams>(
+  async multicall<Calls extends TokenTypes.MultiCallParams>(
     calls: Calls
-  ): Promise<TokenTestTypes.MultiCallResults<Calls>>;
-  async multicall<Callss extends TokenTestTypes.MultiCallParams[]>(
+  ): Promise<TokenTypes.MultiCallResults<Calls>>;
+  async multicall<Callss extends TokenTypes.MultiCallParams[]>(
     callss: Narrow<Callss>
-  ): Promise<TokenTestTypes.MulticallReturnType<Callss>>;
+  ): Promise<TokenTypes.MulticallReturnType<Callss>>;
   async multicall<
-    Callss extends
-      | TokenTestTypes.MultiCallParams
-      | TokenTestTypes.MultiCallParams[]
+    Callss extends TokenTypes.MultiCallParams | TokenTypes.MultiCallParams[]
   >(callss: Callss): Promise<unknown> {
-    return await multicallMethods(
-      TokenTest,
-      this,
-      callss,
-      getContractByCodeHash
-    );
+    return await multicallMethods(Token, this, callss, getContractByCodeHash);
   }
 }

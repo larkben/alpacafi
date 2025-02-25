@@ -49,5 +49,17 @@
       true,
       false
     ]
+  },
+  {
+    "name": "TokenData",
+    "fieldNames": [
+      "value"
+    ],
+    "fieldTypes": [
+      "U256"
+    ],
+    "isMutable": [
+      true
+    ]
   }
 ]

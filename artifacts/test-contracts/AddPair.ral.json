@@ -1,15 +1,15 @@
 {
   "version": "v3.11.1",
-  "name": "MintSupply",
-  "bytecodeTemplate": "01010300010008b417001600{1}0e0c{0}0104",
+  "name": "AddPair",
+  "bytecodeTemplate": "01010300000008b4d1a2{1}0d0c{0}0102",
   "fieldsSig": {
     "names": [
-      "contract",
-      "amount"
+      "oracle",
+      "pair"
     ],
     "types": [
-      "TokenTest",
-      "U256"
+      "TestOracle",
+      "ByteVec"
     ],
     "isMutable": [
       false,

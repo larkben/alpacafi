@@ -9,9 +9,9 @@ import { PrivateKeyWallet } from "@alephium/web3-wallet";
 import { getSigners, testAddress } from "@alephium/web3-test";
 import { alph, randomP2PKHAddress } from "../create-token/utils";
   
-  const nodeProvider = new NodeProvider("http://127.0.0.1:22973");
+const nodeProvider = new NodeProvider("http://127.0.0.1:22973");
   
-  describe("lending p2p coverage + tests", () => {
+describe("lending p2p coverage + tests", () => {
     const groupIndex = groupOfAddress(testAddress);
 
     //let collectionTemplate: NFTPublicSaleCollectionSequentialWithRoyaltyInstance
@@ -27,9 +27,11 @@ import { alph, randomP2PKHAddress } from "../create-token/utils";
     }, 100000);
   
     test('', async () => {
-        const creator = buyer[0]
-        const spender = buyer[1]
+      const creator = buyer[0]
+      const spender = buyer[1]
+
+      
     
         
-      })
-  });
+    })
+});
