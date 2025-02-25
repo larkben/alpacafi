@@ -87,9 +87,9 @@ export async function CreateLoanService (
     return await CreateLoan.execute(signer, {
       initialFields: {
           loanFactory: loanFactory.contractId,
-          tokenRequested: '',
+          tokenRequested: tokenRequested,
           tokenAmount: tokenAmount,
-          collateralToken: '',
+          collateralToken: collateralToken,
           collateralAmount: collateralAmount,
           interest: interest,
           duration: duration,

@@ -3,6 +3,7 @@ import {
     Address,
     DUST_AMOUNT,
     HexString,
+    MINIMAL_CONTRACT_DEPOSIT,
     NodeProvider,
     ONE_ALPH,
     SignerProvider,
@@ -26,7 +27,7 @@ import { off } from 'process'
 import { ValByteVec } from '@alephium/web3/dist/src/api/api-alephium'
 import { MinimalContractDeposit, token } from '@alephium/web3/dist/src/codec'
 import { defaultSigner } from './helperFunctions'
-import { TestOracle, TestOracleInstance, Token, UpdateTime } from '../../artifacts/ts'
+import { AddPair, TestOracle, TestOracleInstance, Token, UpdateTime, UpdateValue } from '../../artifacts/ts'
   
 web3.setCurrentNodeProvider('http://127.0.0.1:22973', undefined, fetch)
   
@@ -53,4 +54,34 @@ export async function EditOracleTime(
       },
       attoAlphAmount: DUST_AMOUNT
     });
+}
+
+export async function AddPairService (
+  signer: SignerProvider,
+  oracle: TestOracleInstance,
+  pair: string
+) {
+  return await AddPair.execute(signer, {
+    initialFields: {
+      oracle: oracle.contractId,
+      pair: stringToHex(pair)
+    },
+    attoAlphAmount: DUST_AMOUNT
+  });
+}
+
+export async function UpdateValueService (
+  signer: SignerProvider,
+  oracle: TestOracleInstance,
+  pair: string,
+  value: bigint
+) {
+  return await UpdateValue.execute(signer, {
+    initialFields: {
+      oracle: oracle.contractId,
+      pair: stringToHex(pair),
+      value: value
+    },
+    attoAlphAmount: DUST_AMOUNT + MINIMAL_CONTRACT_DEPOSIT
+  });
 }

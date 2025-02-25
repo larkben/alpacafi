@@ -43,13 +43,13 @@
     },
     "AuctionFactory": {
       "sourceFile": "auctions/auction_factory.ral",
-      "sourceCodeHash": "97cb378314afa908f9d8a548a7777f5163749cd635c5abe7dfd6461e144cd237",
+      "sourceCodeHash": "a424267be8189b1bd1c9f6a4ce73b00172a6021c6320e2ea69ff2144dcca518d",
       "bytecodeDebugPatch": "",
-      "codeHashDebug": "67eb5e5ab27bedac66e9091571901335271cbb4e7d023f418e8d66f853a47fdd"
+      "codeHashDebug": "22bbe31761c216ad3b4dbd44310ebebdcfaf931e9142b1b6f40271c758ec22a9"
     },
     "Bid": {
       "sourceFile": "auctions/auction_factory.ral",
-      "sourceCodeHash": "97cb378314afa908f9d8a548a7777f5163749cd635c5abe7dfd6461e144cd237",
+      "sourceCodeHash": "a424267be8189b1bd1c9f6a4ce73b00172a6021c6320e2ea69ff2144dcca518d",
       "bytecodeDebugPatch": "",
       "codeHashDebug": ""
     },
@@ -199,7 +199,7 @@
     },
     "Redeem": {
       "sourceFile": "auctions/auction_factory.ral",
-      "sourceCodeHash": "97cb378314afa908f9d8a548a7777f5163749cd635c5abe7dfd6461e144cd237",
+      "sourceCodeHash": "a424267be8189b1bd1c9f6a4ce73b00172a6021c6320e2ea69ff2144dcca518d",
       "bytecodeDebugPatch": "",
       "codeHashDebug": ""
     },
@@ -259,13 +259,13 @@
     },
     "UpdateAuctionFactoryCode": {
       "sourceFile": "auctions/auction_factory.ral",
-      "sourceCodeHash": "97cb378314afa908f9d8a548a7777f5163749cd635c5abe7dfd6461e144cd237",
+      "sourceCodeHash": "a424267be8189b1bd1c9f6a4ce73b00172a6021c6320e2ea69ff2144dcca518d",
       "bytecodeDebugPatch": "",
       "codeHashDebug": ""
     },
     "UpdateAuctionFactoryFields": {
       "sourceFile": "auctions/auction_factory.ral",
-      "sourceCodeHash": "97cb378314afa908f9d8a548a7777f5163749cd635c5abe7dfd6461e144cd237",
+      "sourceCodeHash": "a424267be8189b1bd1c9f6a4ce73b00172a6021c6320e2ea69ff2144dcca518d",
       "bytecodeDebugPatch": "",
       "codeHashDebug": ""
     },
@@ -349,7 +349,7 @@
     },
     "WithdrawAuctionFactoryFees": {
       "sourceFile": "auctions/auction_factory.ral",
-      "sourceCodeHash": "97cb378314afa908f9d8a548a7777f5163749cd635c5abe7dfd6461e144cd237",
+      "sourceCodeHash": "a424267be8189b1bd1c9f6a4ce73b00172a6021c6320e2ea69ff2144dcca518d",
       "bytecodeDebugPatch": "",
       "codeHashDebug": ""
     },
