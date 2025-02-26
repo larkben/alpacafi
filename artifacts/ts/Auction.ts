@@ -155,7 +155,7 @@ class Factory extends ContractFactory<AuctionInstance, AuctionTypes.Fields> {
 
   consts = {
     AuctionCodes: {
-      InvalidAmount: BigInt("0"),
+      InvalidAmount: BigInt("8"),
       InvalidCaller: BigInt("1"),
       AuctionNotDone: BigInt("2"),
       CopyNotUpgradable: BigInt("3"),
@@ -242,7 +242,7 @@ export const Auction = new Factory(
   Contract.fromJson(
     AuctionContractJson,
     "",
-    "34f755c68861d8b2b08c560e8ad73387913bafd0649f68536106f318e25b465e",
+    "0cc185aad1cc0410cda4a68b50cb8c573d35e5147b582703ff79d6943be9d80e",
     AllStructs
   )
 );

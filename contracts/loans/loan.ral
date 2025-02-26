@@ -143,8 +143,9 @@ Contract Loan (
         transferToken!(borrower, lender, tokenRequested, totalPayment - totalCommission)
 
         let parent = LoanFactory(addressToContractId!(parentContract))
+        let collector = parent.depositFeeCollector(tokenRequested)
 
-        parent.depositFeeCollector{selfAddress!() -> tokenRequested: totalCommission, ALPH: dustAmount!()}(
+        Fee(collector).depositInCollector{selfAddress!() -> tokenRequested: totalCommission, ALPH: dustAmount!()}(
             selfAddress!(), 
             tokenRequested, 
             totalCommission
@@ -155,7 +156,7 @@ Contract Loan (
     }
 
     @using(checkExternalCaller = true, preapprovedAssets = false, assetsInContract = true, updateFields = false)
-    pub fn acceptForfeit() -> (Bool) {
+    pub fn forfeit() -> () {
         checkCaller!(callerAddress!() == parentContract, 0)
 
         assert!(active, 3)
@@ -164,13 +165,17 @@ Contract Loan (
         if (!canLiquidate) {
             let totalCommission = getCommission(collateralAmount)
 
-            transferToken!(selfAddress!(), parentContract, ALPH, dustAmount!())
-            transferToken!(selfAddress!(), parentContract, collateralToken, totalCommission)
+            let parent = LoanFactory(addressToContractId!(parentContract))
+            let collector = parent.depositFeeCollector(collateralToken)
 
-            // Claim collateral and remove contract
+            Fee(collector).depositInCollector{selfAddress!() -> collateralToken: totalCommission, ALPH: dustAmount!()}(
+                selfAddress!(), 
+                collateralToken, 
+                totalCommission
+            )
+
+            // claim collateral and remove contract
             destroySelf!(lender)
-
-            return false
         } else {
             let auction = AuctionFactory(auctionContract)
 
@@ -185,8 +190,6 @@ Contract Loan (
 
             // should just return 0.1 alphs
             destroySelf!(borrower)  // liquidation notification
-
-            return true
         }
     }
 

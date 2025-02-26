@@ -12,14 +12,14 @@ Contract AlpacaFiOracle (
     mapping [ByteVec, OracleData] prices
 
     pub fn getValue(pair: ByteVec) -> (OracleData) {
-        assert!(prices.contains!(pair) == true, 0)
+        assert!(prices.contains!(pair) == true, 8)
 
         return prices[pair]
     }
 
     @using(checkExternalCaller = false, preapprovedAssets = true, updateFields = false)
     pub fn insertPair(pair: ByteVec, token: ByteVec, price: U256, decimals: U256) -> () {
-        checkCaller!(callerAddress!() == admin, 0)
+        checkCaller!(callerAddress!() == admin, 8)
         
         let b = OracleData {
             token: token,
@@ -32,7 +32,7 @@ Contract AlpacaFiOracle (
 
     @using(checkExternalCaller = false, preapprovedAssets = false, updateFields = false, assetsInContract = false)
     pub fn removePair(pair: ByteVec) -> () {
-        checkCaller!(callerAddress!() == admin, 0)
+        checkCaller!(callerAddress!() == admin, 8)
 
         prices.remove!(callerAddress!(), pair)
     }
@@ -54,7 +54,7 @@ Contract AlpacaFiOracle (
     pub fn updateOracleCode (
         newCode: ByteVec
     ) -> () {
-        checkCaller!(callerAddress!() == admin, 0)
+        checkCaller!(callerAddress!() == admin, 8)
 
         migrate!(newCode)
     }
@@ -64,7 +64,7 @@ Contract AlpacaFiOracle (
     pub fn updateBotAddress (
         newBot: Address
     ) -> () {
-        checkCaller!(callerAddress!() == admin, 0)
+        checkCaller!(callerAddress!() == admin, 8)
 
         updateBot = newBot
     }

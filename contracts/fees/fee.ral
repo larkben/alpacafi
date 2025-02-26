@@ -26,11 +26,12 @@ Contract Fee (
         }
     }
 
-    @using(checkExternalCaller = false, assetsInContract = false, updateFields = true, preapprovedAssets = true)
+    @using(checkExternalCaller = false, assetsInContract = true, updateFields = true, preapprovedAssets = true)
     pub fn depositInCollector(caller: Address, token: ByteVec, amount: U256) -> () {
-        assert!(token == asset, 0)
+        assert!(token == asset, 7)
 
         transferToken!(caller, selfAddress!(), token, amount)
+        transferToken!(caller, selfAddress!(), ALPH, dustAmount!())
 
         fees = fees + amount
     }

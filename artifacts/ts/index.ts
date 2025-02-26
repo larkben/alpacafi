@@ -12,5 +12,4 @@ export * from "./LoanFactory";
 export * from "./Pool";
 export * from "./TestOracle";
 export * from "./Token";
-export * from "./TokenTest";
 export * from "./scripts";

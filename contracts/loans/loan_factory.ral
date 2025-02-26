@@ -52,9 +52,14 @@ Contract LoanFactory (
         who: Address
     )
 
-    event LoanWithdraw (
-        contract: ByteVec, 
-        forfeit: Bool, 
+    event LoanLiqWith (
+        contract: ByteVec,
+        liquidation: Bool,
+        who: Address
+    )
+
+    event LoanPayed (
+        contract: ByteVec,
         who: Address
     )
 
@@ -150,11 +155,11 @@ Contract LoanFactory (
     }
 
     // fee collector
-    @using(checkExternalCaller = false, preapprovedAssets = true)
-    pub fn depositFeeCollector(caller: Address, token: ByteVec, amount: U256) -> () {
-        let collector = Fee(subContractId!(token))
+    @using(checkExternalCaller = false, preapprovedAssets = false)
+    pub fn depositFeeCollector(token: ByteVec) -> (ByteVec) {
+        let collector = subContractId!(token)
 
-        collector.depositInCollector{caller -> token: amount}(caller, token, amount)
+        return collector
     }
 
     pub fn getRequiredTokens(contractId: ByteVec, withInterest: Bool) -> (ByteVec, U256) {
@@ -305,7 +310,7 @@ Contract LoanFactory (
         loan.payLoan{caller -> token: totalAmount, ALPH: dustAmount!() * 2}(caller)
 
         // emit event
-        emit LoanWithdraw(contractId, false, caller)
+        emit LoanPayed(contractId, caller)
     }
     
     @using(checkExternalCaller = false, preapprovedAssets = false, assetsInContract = enforced)
@@ -317,15 +322,16 @@ Contract LoanFactory (
         let (collateral, collateralAmount) = loan.getTokenCollateral()
         let (token, amount) = loan.getTokenRequested()
 
-        let move = loan.acceptForfeit()
+        // whether or not a auction will be made for the funds
+        let liquidation = loan.canLoanLiquidate()
 
-        // emit event
-        if (move == false) {
-            emit LoanWithdraw(contractId, true, caller)
-        }
-        else {
-            emit LoanLiquidation(contractId, token, amount)
-        }
+        loan.forfeit()
+
+        emit LoanLiqWith(
+            contractId,
+            liquidation,
+            caller
+        )
     }
 
     @using(checkExternalCaller = false, updateFields = false)
@@ -350,7 +356,7 @@ Contract LoanFactory (
             15000
         )
 
-        assert!(condition == true, 8)
+        assert!(condition == false, 8)
 
         loan.activateLiquidation(ratio)
 
@@ -593,7 +599,7 @@ TxScript TokenMapping (
     decimals: U256,
     alephiumOracle: Bool
 ) {
-    loanFactory.tokenMapping{callerAddress!() -> ALPH: mapEntryDeposit!()}(token, add, pairtoken, decimals, alephiumOracle)
+    loanFactory.tokenMapping{callerAddress!() -> ALPH: mapEntryDeposit!() + minimalContractDeposit!()}(token, add, pairtoken, decimals, alephiumOracle)
 }
 
 TxScript UpdateLoanFactoryCode (

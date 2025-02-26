@@ -27,13 +27,24 @@ import { off } from 'process'
 import { ValByteVec } from '@alephium/web3/dist/src/api/api-alephium'
 import { MinimalContractDeposit, token } from '@alephium/web3/dist/src/codec'
 import { defaultSigner } from './helperFunctions'
-import { AcceptLoan, AddCollateral, AuctionFactoryInstance, CancelLoan, CreateLoan, FeeInstance, ForfeitLoan, LiquidationLoan, Loan, LoanFactory, LoanFactoryInstance, LoanInstance, PayLoan, RemoveCollateral, TestOracleInstance, TokenMapping, WithdrawLoanFactoryFees } from '../../artifacts/ts'
+import { AcceptLoan, AddCollateral, AuctionFactoryInstance, CancelLoan, CreateLoan, Fee, FeeInstance, ForfeitLoan, LiquidationLoan, Loan, LoanFactory, LoanFactoryInstance, LoanInstance, PayLoan, RemoveCollateral, TestOracleInstance, TokenMapping, WithdrawLoanFactoryFees } from '../../artifacts/ts'
   
 web3.setCurrentNodeProvider('http://127.0.0.1:22973', undefined, fetch)
   
 const nodeProvider = new NodeProvider('http://127.0.0.1:22973') 
 
-// Fee template
+// fee template
+export async function deployFeeTemplate() {
+    return await Fee.deploy(defaultSigner, {
+      initialFields: {
+          admin: defaultSigner.account.address,
+          parentContract: defaultSigner.account.address,
+          asset: '',
+          fees: 0n,
+          hasGas: false
+      },
+    });
+}
 
 // loan template contract
 export async function deployLoanTemplate(auctionHouse: AuctionFactoryInstance) {
@@ -65,7 +76,7 @@ export async function deployLoanFactory(loanTemplate: LoanInstance, auctionHouse
           admin: defaultSigner.account.address,
           loanTemplate: loanTemplate.contractId,
           auctionHouse: auctionHouse.contractId,
-          feeTemplate: 
+          feeTemplate: feeTemplate.contractId,
           activeLoans: 0n,
           rate: 300n,                               // p2p lending fee
           oracle: oracle.address,
@@ -239,10 +250,6 @@ export async function WithdrawLoanFactoryFeesService (
     });
 }
 
-//? need to add mapping for fee contracts and paths
-// much needed upgrade due to utxo asset limits; while adding dia oracle edits
-
-//* need to add amount to tokenMapping (this is to prevent bad admin)
 export async function TokenMappingService (
     signer: SignerProvider,
     loanFactory: LoanFactoryInstance,
@@ -261,6 +268,24 @@ export async function TokenMappingService (
           decimals: decimals,
           alephiumOracle: alephiumOracle
       },
-      attoAlphAmount: DUST_AMOUNT + MINIMAL_CONTRACT_DEPOSIT,
+      attoAlphAmount: DUST_AMOUNT + MINIMAL_CONTRACT_DEPOSIT * 2n,
+    });
+}
+
+export async function WithdrawLoanFeesService (
+    signer: SignerProvider,
+    loanFactory: LoanFactoryInstance,
+    token: string,
+    who: Address,
+    amount: bigint
+) {
+    return await WithdrawLoanFactoryFees.execute(signer, {
+      initialFields: {
+          loanFactory: loanFactory.contractId,
+          token: token,
+          who: who,
+          amount: amount
+      },
+      attoAlphAmount: DUST_AMOUNT * 2n
     });
 }

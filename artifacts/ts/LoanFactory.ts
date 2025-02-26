@@ -81,9 +81,13 @@ export namespace LoanFactoryTypes {
     contract: HexString;
     who: Address;
   }>;
-  export type LoanWithdrawEvent = ContractEvent<{
+  export type LoanLiqWithEvent = ContractEvent<{
     contract: HexString;
-    forfeit: boolean;
+    liquidation: boolean;
+    who: Address;
+  }>;
+  export type LoanPayedEvent = ContractEvent<{
+    contract: HexString;
     who: Address;
   }>;
   export type AddCollateralLoanEvent = ContractEvent<{
@@ -122,12 +126,8 @@ export namespace LoanFactoryTypes {
       result: CallContractResult<bigint>;
     };
     depositFeeCollector: {
-      params: CallContractParams<{
-        caller: Address;
-        token: HexString;
-        amount: bigint;
-      }>;
-      result: CallContractResult<null>;
+      params: CallContractParams<{ token: HexString }>;
+      result: CallContractResult<HexString>;
     };
     getRequiredTokens: {
       params: CallContractParams<{
@@ -249,11 +249,7 @@ export namespace LoanFactoryTypes {
       result: SignExecuteScriptTxResult;
     };
     depositFeeCollector: {
-      params: SignExecuteContractMethodParams<{
-        caller: Address;
-        token: HexString;
-        amount: bigint;
-      }>;
+      params: SignExecuteContractMethodParams<{ token: HexString }>;
       result: SignExecuteScriptTxResult;
     };
     getRequiredTokens: {
@@ -376,10 +372,11 @@ class Factory extends ContractFactory<
     AcceptedLoan: 1,
     LoanRemoved: 2,
     LoanCanceled: 3,
-    LoanWithdraw: 4,
-    AddCollateralLoan: 5,
-    RemoveCollateralLoan: 6,
-    LoanLiquidation: 7,
+    LoanLiqWith: 4,
+    LoanPayed: 5,
+    AddCollateralLoan: 6,
+    RemoveCollateralLoan: 7,
+    LoanLiquidation: 8,
   };
   consts = {
     LoanCodes: { NotAdmin: BigInt("0"), TokenSizeTooSmall: BigInt("1") },
@@ -429,10 +426,10 @@ class Factory extends ContractFactory<
     depositFeeCollector: async (
       params: TestContractParams<
         LoanFactoryTypes.Fields,
-        { caller: Address; token: HexString; amount: bigint },
+        { token: HexString },
         LoanFactoryTypes.Maps
       >
-    ): Promise<TestContractResult<null, LoanFactoryTypes.Maps>> => {
+    ): Promise<TestContractResult<HexString, LoanFactoryTypes.Maps>> => {
       return testMethod(
         this,
         "depositFeeCollector",
@@ -637,8 +634,8 @@ class Factory extends ContractFactory<
 export const LoanFactory = new Factory(
   Contract.fromJson(
     LoanFactoryContractJson,
-    "=62+6=1-1=2-2+8f=2-2+a3=2-2+bb=2924-2+42=31-1+8=60+7a7e0214696e73657274206174206d617020706174683a2000=85-1+2=36+7a7e021472656d6f7665206174206d617020706174683a2000=206",
-    "60bb3cd1aaab93396b550486085f796c6455b56230bfb7592f94deca1ca64258",
+    "=62-2+48=2+7=1-1=2-2+88=2-2+a0=2870-2+42=31-1+8=60+7a7e0214696e73657274206174206d617020706174683a2000=85-1+2=36+7a7e021472656d6f7665206174206d617020706174683a2000=206",
+    "5bd2f2b4788ae3d69c75799a9852be91e03143fb966172e9e25d8cc8fe1c13cf",
     AllStructs
   )
 );
@@ -718,15 +715,28 @@ export class LoanFactoryInstance extends ContractInstance {
     );
   }
 
-  subscribeLoanWithdrawEvent(
-    options: EventSubscribeOptions<LoanFactoryTypes.LoanWithdrawEvent>,
+  subscribeLoanLiqWithEvent(
+    options: EventSubscribeOptions<LoanFactoryTypes.LoanLiqWithEvent>,
     fromCount?: number
   ): EventSubscription {
     return subscribeContractEvent(
       LoanFactory.contract,
       this,
       options,
-      "LoanWithdraw",
+      "LoanLiqWith",
+      fromCount
+    );
+  }
+
+  subscribeLoanPayedEvent(
+    options: EventSubscribeOptions<LoanFactoryTypes.LoanPayedEvent>,
+    fromCount?: number
+  ): EventSubscription {
+    return subscribeContractEvent(
+      LoanFactory.contract,
+      this,
+      options,
+      "LoanPayed",
       fromCount
     );
   }
@@ -776,7 +786,8 @@ export class LoanFactoryInstance extends ContractInstance {
       | LoanFactoryTypes.AcceptedLoanEvent
       | LoanFactoryTypes.LoanRemovedEvent
       | LoanFactoryTypes.LoanCanceledEvent
-      | LoanFactoryTypes.LoanWithdrawEvent
+      | LoanFactoryTypes.LoanLiqWithEvent
+      | LoanFactoryTypes.LoanPayedEvent
       | LoanFactoryTypes.AddCollateralLoanEvent
       | LoanFactoryTypes.RemoveCollateralLoanEvent
       | LoanFactoryTypes.LoanLiquidationEvent

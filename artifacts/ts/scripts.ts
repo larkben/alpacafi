@@ -32,7 +32,6 @@ import { default as ForfeitLoanScriptJson } from "../loans/ForfeitLoan.ral.json"
 import { default as InsertPairScriptJson } from "../oracle/InsertPair.ral.json";
 import { default as LiquidateDebtScriptJson } from "../pool-lending/LiquidateDebt.ral.json";
 import { default as LiquidationLoanScriptJson } from "../loans/LiquidationLoan.ral.json";
-import { default as MintSupplyScriptJson } from "../test-contracts/MintSupply.ral.json";
 import { default as PayLoanScriptJson } from "../loans/PayLoan.ral.json";
 import { default as RedeemScriptJson } from "../auctions/Redeem.ral.json";
 import { default as RemoveCollateralScriptJson } from "../loans/RemoveCollateral.ral.json";
@@ -232,14 +231,6 @@ export const LiquidationLoan = new ExecutableScript<{
   contract: HexString;
 }>(
   Script.fromJson(LiquidationLoanScriptJson, "", AllStructs),
-  getContractByCodeHash
-);
-
-export const MintSupply = new ExecutableScript<{
-  contract: HexString;
-  amount: bigint;
-}>(
-  Script.fromJson(MintSupplyScriptJson, "", AllStructs),
   getContractByCodeHash
 );
 

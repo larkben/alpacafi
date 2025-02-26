@@ -27,7 +27,7 @@ import { off } from 'process'
 import { ValByteVec } from '@alephium/web3/dist/src/api/api-alephium'
 import { MinimalContractDeposit, token } from '@alephium/web3/dist/src/codec'
 import { defaultSigner } from './helperFunctions'
-import { AcceptLoan, AddCollateral, Auction, AuctionFactory, AuctionFactoryInstance, AuctionInstance, Bid, CancelLoan, CreateLoan, ForfeitLoan, LiquidationLoan, Loan, LoanFactory, LoanFactoryInstance, LoanInstance, PayLoan, RemoveCollateral, TestOracleInstance, TokenMapping, WithdrawLoanFactoryFees } from '../../artifacts/ts'
+import { AcceptLoan, AddCollateral, Auction, AuctionFactory, AuctionFactoryInstance, AuctionInstance, Bid, CancelLoan, CreateLoan, EditLoanFactory, ForfeitLoan, LiquidationLoan, Loan, LoanFactory, LoanFactoryInstance, LoanInstance, PayLoan, Redeem, RemoveCollateral, TestOracleInstance, TokenMapping, WithdrawLoanFactoryFees } from '../../artifacts/ts'
   
 web3.setCurrentNodeProvider('http://127.0.0.1:22973', undefined, fetch)
   
@@ -87,19 +87,29 @@ export async function BidService (
 export async function RedeemService (
     signer: SignerProvider,
     auctionFactory: AuctionFactoryInstance,
-    auction: string,
-    token: string,
-    amount: bigint
+    auction: string
 ) {
-    return await Bid.execute(signer, {
+    return await Redeem.execute(signer, {
       initialFields: {
           contract: auctionFactory.contractId,
-          id: auction,
-          token: token,
-          amount: amount
+          id: auction
       },
       attoAlphAmount: DUST_AMOUNT
     });
 }
 
 // add edit lf
+
+export async function EditLFAuctionFactoryService (
+    signer: SignerProvider,
+    auctionFactory: AuctionFactoryInstance,
+    lf: LoanFactoryInstance
+) {
+    return await EditLoanFactory.execute(signer, {
+      initialFields: {
+          contract: auctionFactory.contractId,
+          factoryId: lf.contractId
+      },
+      attoAlphAmount: DUST_AMOUNT
+    });
+}

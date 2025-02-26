@@ -12,7 +12,7 @@ Contract Auction (
     mut timeToEnd: U256          // set at 0
 ) {
     enum AuctionCodes {
-        InvalidAmount = 0
+        InvalidAmount = 8
         InvalidCaller = 1
         AuctionNotDone = 2
         CopyNotUpgradable = 3
@@ -85,11 +85,12 @@ Contract Auction (
             let feeTotal = calculateFee(collateralAmount)
 
             let factory = AuctionFactory(addressToContractId!(parentContract))
-            let collector = LoanFactory(factory.getLoanFactoryId())
+            let parent = LoanFactory(factory.getLoanFactoryId())
+            let collector = parent.depositFeeCollector(collateralToken)
 
-            collector.depositFeeCollector{selfAddress!() -> ALPH: dustAmount!(), collateralToken: feeTotal}(
-                selfAddress!(),
-                collateralToken,
+            Fee(collector).depositInCollector{selfAddress!() -> collateralToken: feeTotal, ALPH: dustAmount!()}(
+                selfAddress!(), 
+                collateralToken, 
                 feeTotal
             )
 
@@ -102,11 +103,10 @@ Contract Auction (
 
         // get auctionplace fees for liquidations
         let collateralFee = calculateFee(collateralAmount)
-        let tokenFee = calculateFee(tokenAmount)
 
         // transfer assets to loaner
         transferToken!(selfAddress!(), loaner, ALPH, dustAmount!())
-        transferToken!(selfAddress!(), loaner, tokenRequested, tokenAmount - tokenFee)
+        transferToken!(selfAddress!(), loaner, tokenRequested, tokenAmount)
 
         // transfer collateral to highest bidder
         transferToken!(selfAddress!(), highestBidder, ALPH, dustAmount!())
@@ -114,18 +114,13 @@ Contract Auction (
 
         // auction house / protocol fees
         let factory = AuctionFactory(addressToContractId!(parentContract))
-        let collector = LoanFactory(factory.getLoanFactoryId())
+        let parent = LoanFactory(factory.getLoanFactoryId())
+        let collector = parent.depositFeeCollector(collateralToken)
 
-        collector.depositFeeCollector{selfAddress!() -> ALPH: dustAmount!(), collateralToken: collateralFee}(
-            selfAddress!(),
-            collateralToken,
+        Fee(collector).depositInCollector{selfAddress!() -> collateralToken: collateralFee, ALPH: dustAmount!()}(
+            selfAddress!(), 
+            collateralToken, 
             collateralFee
-        )
-
-        collector.depositFeeCollector{selfAddress!() -> ALPH: dustAmount!(), tokenRequested: tokenFee}(
-            selfAddress!(),
-            tokenRequested,
-            tokenFee
         )
 
         destroySelf!(highestBidder)
