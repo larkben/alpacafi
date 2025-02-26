@@ -13,7 +13,7 @@ import { randomP2PKHAddress, alph, defaultSigner, getContractCreated, getPrecise
 import { AddPair, AuctionFactoryInstance, AuctionInstance, LoanFactoryInstance, LoanInstance, TestOracleInstance } from "../../artifacts/ts";
 import { AddPairService, deployTestOracle, EditOracleTime, UpdateValueService } from "./priceOracleServices";
 import { deployAuctionFactory, deployAuctionTemplate } from "./auctionFactoryServices";
-import { AcceptLoanService, AddCollateralService, CancelLoanService, CreateLoanService, deployLoanFactory, deployLoanTemplate, RemoveCollateralService, TokenMappingService } from "./loanFactoryServices";
+import { AcceptLoanService, AddCollateralService, CancelLoanService, CreateLoanService, deployLoanFactory, deployLoanTemplate, PayLoanService, RemoveCollateralService, TokenMappingService } from "./loanFactoryServices";
 import { assert } from "console";
   
 const nodeProvider = new NodeProvider("http://127.0.0.1:22973");
@@ -116,6 +116,15 @@ describe("lending p2p coverage + tests", () => {
 
       await AcceptLoanService(spender, loanFactoryTemplate, loan, ALPH_TOKEN_ID, ONE_ALPH * 5n)
 
+      let factoryBalance = await getPreciseALPHBalance(loanFactoryTemplate.address)
+      //console.log(factoryBalance)
+
+      await PayLoanService(creator, loanFactoryTemplate, loan, ALPH_TOKEN_ID, ONE_ALPH * 6n)
+
+      factoryBalance = await getPreciseALPHBalance(loanFactoryTemplate.address)
+      //console.log(factoryBalance)
+
+      expect(factoryBalance).toEqual("261500000000000000")
     })
 
     /*

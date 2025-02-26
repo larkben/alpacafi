@@ -50,6 +50,7 @@ export namespace LoanFactoryTypes {
     admin: Address;
     loanTemplate: HexString;
     auctionHouse: HexString;
+    feeTemplate: HexString;
     activeLoans: bigint;
     rate: bigint;
     oracle: HexString;
@@ -119,6 +120,14 @@ export namespace LoanFactoryTypes {
     getTime: {
       params: Omit<CallContractParams<{}>, "args">;
       result: CallContractResult<bigint>;
+    };
+    depositFeeCollector: {
+      params: CallContractParams<{
+        caller: Address;
+        token: HexString;
+        amount: bigint;
+      }>;
+      result: CallContractResult<null>;
     };
     getRequiredTokens: {
       params: CallContractParams<{
@@ -237,6 +246,14 @@ export namespace LoanFactoryTypes {
     };
     getTime: {
       params: Omit<SignExecuteContractMethodParams<{}>, "args">;
+      result: SignExecuteScriptTxResult;
+    };
+    depositFeeCollector: {
+      params: SignExecuteContractMethodParams<{
+        caller: Address;
+        token: HexString;
+        amount: bigint;
+      }>;
       result: SignExecuteScriptTxResult;
     };
     getRequiredTokens: {
@@ -408,6 +425,20 @@ class Factory extends ContractFactory<
       >
     ): Promise<TestContractResult<bigint, LoanFactoryTypes.Maps>> => {
       return testMethod(this, "getTime", params, getContractByCodeHash);
+    },
+    depositFeeCollector: async (
+      params: TestContractParams<
+        LoanFactoryTypes.Fields,
+        { caller: Address; token: HexString; amount: bigint },
+        LoanFactoryTypes.Maps
+      >
+    ): Promise<TestContractResult<null, LoanFactoryTypes.Maps>> => {
+      return testMethod(
+        this,
+        "depositFeeCollector",
+        params,
+        getContractByCodeHash
+      );
     },
     getRequiredTokens: async (
       params: TestContractParams<
@@ -606,8 +637,8 @@ class Factory extends ContractFactory<
 export const LoanFactory = new Factory(
   Contract.fromJson(
     LoanFactoryContractJson,
-    "=57-3+61=1-3=2-2+2d=2-2+414659=2855-1+6=29-1+4=60+7a7e0214696e73657274206174206d617020706174683a2000=23-1+a=36+7a7e021472656d6f7665206174206d617020706174683a2000=144",
-    "ff7a87ec85eb90879dc29bcb273fa235f8d950a027664cef49f26438eb42e570",
+    "=62+6=1-1=2-2+8f=2-2+a3=2-2+bb=2924-2+42=31-1+8=60+7a7e0214696e73657274206174206d617020706174683a2000=85-1+2=36+7a7e021472656d6f7665206174206d617020706174683a2000=206",
+    "60bb3cd1aaab93396b550486085f796c6455b56230bfb7592f94deca1ca64258",
     AllStructs
   )
 );
@@ -782,6 +813,17 @@ export class LoanFactoryInstance extends ContractInstance {
         this,
         "getTime",
         params === undefined ? {} : params,
+        getContractByCodeHash
+      );
+    },
+    depositFeeCollector: async (
+      params: LoanFactoryTypes.CallMethodParams<"depositFeeCollector">
+    ): Promise<LoanFactoryTypes.CallMethodResult<"depositFeeCollector">> => {
+      return callMethod(
+        LoanFactory,
+        this,
+        "depositFeeCollector",
+        params,
         getContractByCodeHash
       );
     },
@@ -973,6 +1015,18 @@ export class LoanFactoryInstance extends ContractInstance {
       params: LoanFactoryTypes.SignExecuteMethodParams<"getTime">
     ): Promise<LoanFactoryTypes.SignExecuteMethodResult<"getTime">> => {
       return signExecuteMethod(LoanFactory, this, "getTime", params);
+    },
+    depositFeeCollector: async (
+      params: LoanFactoryTypes.SignExecuteMethodParams<"depositFeeCollector">
+    ): Promise<
+      LoanFactoryTypes.SignExecuteMethodResult<"depositFeeCollector">
+    > => {
+      return signExecuteMethod(
+        LoanFactory,
+        this,
+        "depositFeeCollector",
+        params
+      );
     },
     getRequiredTokens: async (
       params: LoanFactoryTypes.SignExecuteMethodParams<"getRequiredTokens">

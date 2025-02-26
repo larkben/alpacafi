@@ -57,7 +57,7 @@ const deployScript: DeployFunction<Settings> = async (
     let tx = await ForfeitLoan.execute(signer, {
       initialFields: {
         loanFactory: "291ef5ba0bec2d64a0cb8ccf474464b118fc7a1a1186a8e03187cc0a8fd4d400",
-        contract: "bb65c05a273edc20d407eac1c2ac56bc26c5c63d89fab25634dcd1f1e765f300"
+        contract: "b7fddcb443aa0aee6925f6c06dd833fbb2d89acd55b6f0d3361705b035b10000"
       },
       attoAlphAmount: DUST_AMOUNT
     })

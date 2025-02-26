@@ -27,11 +27,13 @@ import { off } from 'process'
 import { ValByteVec } from '@alephium/web3/dist/src/api/api-alephium'
 import { MinimalContractDeposit, token } from '@alephium/web3/dist/src/codec'
 import { defaultSigner } from './helperFunctions'
-import { AcceptLoan, AddCollateral, AuctionFactoryInstance, CancelLoan, CreateLoan, ForfeitLoan, LiquidationLoan, Loan, LoanFactory, LoanFactoryInstance, LoanInstance, PayLoan, RemoveCollateral, TestOracleInstance, TokenMapping, WithdrawLoanFactoryFees } from '../../artifacts/ts'
+import { AcceptLoan, AddCollateral, AuctionFactoryInstance, CancelLoan, CreateLoan, FeeInstance, ForfeitLoan, LiquidationLoan, Loan, LoanFactory, LoanFactoryInstance, LoanInstance, PayLoan, RemoveCollateral, TestOracleInstance, TokenMapping, WithdrawLoanFactoryFees } from '../../artifacts/ts'
   
 web3.setCurrentNodeProvider('http://127.0.0.1:22973', undefined, fetch)
   
 const nodeProvider = new NodeProvider('http://127.0.0.1:22973') 
+
+// Fee template
 
 // loan template contract
 export async function deployLoanTemplate(auctionHouse: AuctionFactoryInstance) {
@@ -57,12 +59,13 @@ export async function deployLoanTemplate(auctionHouse: AuctionFactoryInstance) {
 }
 
 // loan factory contract
-export async function deployLoanFactory(loanTemplate: LoanInstance, auctionHouse: AuctionFactoryInstance, oracle: TestOracleInstance) {
+export async function deployLoanFactory(loanTemplate: LoanInstance, auctionHouse: AuctionFactoryInstance, feeTemplate: FeeInstance, oracle: TestOracleInstance) {
     return await LoanFactory.deploy(defaultSigner, {
       initialFields: {
           admin: defaultSigner.account.address,
           loanTemplate: loanTemplate.contractId,
           auctionHouse: auctionHouse.contractId,
+          feeTemplate: 
           activeLoans: 0n,
           rate: 300n,                               // p2p lending fee
           oracle: oracle.address,

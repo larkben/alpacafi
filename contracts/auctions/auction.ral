@@ -84,8 +84,14 @@ Contract Auction (
             // instant redeem
             let feeTotal = calculateFee(collateralAmount)
 
-            transferToken!(selfAddress!(), parentContract, ALPH, dustAmount!())
-            transferToken!(selfAddress!(), parentContract, collateralToken, feeTotal)
+            let factory = AuctionFactory(addressToContractId!(parentContract))
+            let collector = LoanFactory(factory.getLoanFactoryId())
+
+            collector.depositFeeCollector{selfAddress!() -> ALPH: dustAmount!(), collateralToken: feeTotal}(
+                selfAddress!(),
+                collateralToken,
+                feeTotal
+            )
 
             destroySelf!(highestBidder)
         }
@@ -107,9 +113,20 @@ Contract Auction (
         transferToken!(selfAddress!(), highestBidder, collateralToken, collateralAmount - collateralFee)
 
         // auction house / protocol fees
-        transferToken!(selfAddress!(), loaner, ALPH, dustAmount!())
-        transferToken!(selfAddress!(), parentContract, collateralToken, collateralFee)
-        transferToken!(selfAddress!(), parentContract, tokenRequested, tokenFee)
+        let factory = AuctionFactory(addressToContractId!(parentContract))
+        let collector = LoanFactory(factory.getLoanFactoryId())
+
+        collector.depositFeeCollector{selfAddress!() -> ALPH: dustAmount!(), collateralToken: collateralFee}(
+            selfAddress!(),
+            collateralToken,
+            collateralFee
+        )
+
+        collector.depositFeeCollector{selfAddress!() -> ALPH: dustAmount!(), tokenRequested: tokenFee}(
+            selfAddress!(),
+            tokenRequested,
+            tokenFee
+        )
 
         destroySelf!(highestBidder)
     }

@@ -27,7 +27,7 @@ import { off } from 'process'
 import { ValByteVec } from '@alephium/web3/dist/src/api/api-alephium'
 import { MinimalContractDeposit, token } from '@alephium/web3/dist/src/codec'
 import { defaultSigner } from './helperFunctions'
-import { AcceptLoan, AddCollateral, Auction, AuctionFactory, AuctionFactoryInstance, AuctionInstance, Bid, CancelLoan, CreateLoan, ForfeitLoan, LiquidationLoan, Loan, LoanFactory, LoanFactoryInstance, LoanInstance, PayLoan, RemoveCollateral, TestOracleInstance, TokenMapping, WithdrawAuctionFactoryFees, WithdrawLoanFactoryFees } from '../../artifacts/ts'
+import { AcceptLoan, AddCollateral, Auction, AuctionFactory, AuctionFactoryInstance, AuctionInstance, Bid, CancelLoan, CreateLoan, ForfeitLoan, LiquidationLoan, Loan, LoanFactory, LoanFactoryInstance, LoanInstance, PayLoan, RemoveCollateral, TestOracleInstance, TokenMapping, WithdrawLoanFactoryFees } from '../../artifacts/ts'
   
 web3.setCurrentNodeProvider('http://127.0.0.1:22973', undefined, fetch)
   
@@ -56,6 +56,7 @@ export async function deployAuctionFactory(auctionTemplate: AuctionInstance, ora
       initialFields: {
           admin: defaultSigner.account.address,
           auctionTemplate: auctionTemplate.contractId,
+          loanFactory: "",
           auctionNumber: 0n,
           fee: 300n,
           oracle: oracleTemplate.contractId
@@ -101,20 +102,4 @@ export async function RedeemService (
     });
 }
 
-export async function WithdrawAuctionFactoryFeesService (
-    signer: SignerProvider,
-    auctionFactory: AuctionFactoryInstance,
-    who: Address,
-    token: string,
-    amount: bigint
-) {
-    return await WithdrawAuctionFactoryFees.execute(signer, {
-      initialFields: {
-          auction: auctionFactory.contractId,
-          who: who,
-          token: token,
-          amount: amount
-      },
-      attoAlphAmount: DUST_AMOUNT
-    });
-}
+// add edit lf

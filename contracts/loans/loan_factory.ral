@@ -18,6 +18,7 @@ Contract LoanFactory (
     admin: Address,
     loanTemplate: ByteVec,
     auctionHouse: ByteVec,
+    feeTemplate: ByteVec,
     mut activeLoans: U256,
     mut rate: U256,
     oracle: ByteVec,
@@ -146,6 +147,14 @@ Contract LoanFactory (
         let time = TestOracle(oracle).getTime()
 
         return time
+    }
+
+    // fee collector
+    @using(checkExternalCaller = false, preapprovedAssets = true)
+    pub fn depositFeeCollector(caller: Address, token: ByteVec, amount: U256) -> () {
+        let collector = Fee(subContractId!(token))
+
+        collector.depositInCollector{caller -> token: amount}(caller, token, amount)
     }
 
     pub fn getRequiredTokens(contractId: ByteVec, withInterest: Bool) -> (ByteVec, U256) {
@@ -411,6 +420,7 @@ Contract LoanFactory (
         rate = newRate
     }
 
+    // need to add fee contracts here
     @using(checkExternalCaller = true, preapprovedAssets = true, updateFields = false)
     pub fn tokenMapping(token: ByteVec, add: Bool, pairtoken: ByteVec, decimals: U256, alephiumOracle: Bool) -> () {
         checkCaller!(callerAddress!() == admin, LoanCodes.NotAdmin)
@@ -423,17 +433,39 @@ Contract LoanFactory (
             }
 
             tokenPairs.insert!(callerAddress!(), token, b)
+
+            // add fee contract for token
+            let (encodeImmutableFields, encodeMutableFields) = Fee.encodeFields!(
+                admin,
+                selfAddress!(),
+                token,
+                0,
+                false
+            )
+            
+            let feeId = copyCreateSubContract!{callerAddress!() -> ALPH: minimalContractDeposit!()}(
+                token,
+                feeTemplate,
+                encodeImmutableFields,
+                encodeMutableFields
+            )
         }
         else {
             tokenPairs.remove!(callerAddress!(), token)
+
+            let fee = Fee(subContractId!(token))
+
+            fee.destroyFee(callerAddress!())
         }
     }
 
-    @using(checkExternalCaller = true, preapprovedAssets = false, updateFields = false, assetsInContract = true)
+    @using(checkExternalCaller = true, preapprovedAssets = true, updateFields = false, assetsInContract = enforced)
     pub fn withdrawLoanFactoryFees(who: Address, token: ByteVec, amount: U256) -> () {
         checkCaller!(callerAddress!() == admin, LoanCodes.NotAdmin)
 
-        transferToken!(selfAddress!(), who, token, amount)
+        let feeContract = Fee(subContractId!(token))
+
+        feeContract.withdrawAsset{callerAddress!() -> ALPH: dustAmount!()}(callerAddress!(), who, amount)
 
         // emit event
     }
@@ -550,7 +582,7 @@ TxScript WithdrawLoanFactoryFees (
     token: ByteVec,
     amount: U256
 ) {
-    loanFactory.withdrawLoanFactoryFees(who, token, amount)
+    loanFactory.withdrawLoanFactoryFees{callerAddress!() -> ALPH: dustAmount!()}(who, token, amount)
 }
 
 TxScript TokenMapping (

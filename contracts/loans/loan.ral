@@ -142,8 +142,13 @@ Contract Loan (
         transferToken!(borrower, lender, ALPH, dustAmount!())
         transferToken!(borrower, lender, tokenRequested, totalPayment - totalCommission)
 
-        transferToken!(borrower, parentContract, ALPH, dustAmount!())
-        transferToken!(borrower, parentContract, tokenRequested, totalCommission)
+        let parent = LoanFactory(addressToContractId!(parentContract))
+
+        parent.depositFeeCollector{selfAddress!() -> tokenRequested: totalCommission, ALPH: dustAmount!()}(
+            selfAddress!(), 
+            tokenRequested, 
+            totalCommission
+        )
 
         // destroy the contract
         destroySelf!(borrower)

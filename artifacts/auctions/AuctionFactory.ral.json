@@ -1,18 +1,20 @@
 {
   "version": "v3.11.1",
   "name": "AuctionFactory",
-  "bytecode": "050916402c408e40ce40ee41034117412f4148010000010108d3a7a9c7130c0dce0201041700160002010000010108d3587d9a230c0dce02010417001600020101050b004035d304b0e037b41705b2160216001601a0011604130664160316040c130364170717060001170816081605a0001303641709b47ad10e2ca216001601a31609ce0116061607c1170aa0000d2aa1000516051600160116021603160a7401010308001cd3cc6e67cf16001703b4170416047a16011602a313c3038d7ea4c68000a2160416020e0f1603010217071706170506160416001605160616077301020103000ed3363b59b616001701b4170216020d0c1601010307160216005f010001010008d366b0cd96b4ce00450c7b1600a101010001010008d3f25baf2db4ce00450c7b1600ba01000303000ad3823b8305b4ce00450c7b160016011602bb01020303000bd38c4df22cb4ce00450c7bb2160016011602aa",
-  "codeHash": "22bbe31761c216ad3b4dbd44310ebebdcfaf931e9142b1b6f40271c758ec22a9",
+  "bytecode": "060a16402c403a409c40dc40fc41114126413a4152010000010108d3a7a9c7130c0dce0201041700160002010000010108d3587d9a230c0dce0201041700160002010000000103d39e24e293a000020101050b004035d304b0e037b41705b2160216001601a0021604130664160316040c130364170717060001170816081605a0011303641709b47ad10e2ca216001601a31609ce0116061607c1170aa0010d2aa1010516051600160116021603160a7401010308001cd3cc6e67cf16001703b4170416047a16011602a313c3038d7ea4c68000a2160416020e0f1603010217071706170506160416001605160616077301020103000ed3363b59b616001701b4170216020d0c1601010307160216005f010001010008d366b0cd96b4ce00450c7b1600a102010001010008d3636a230cb4ce00450c7b1600a100010001010008d3f25baf2db4ce00450c7b1600ba01000303000ad3823b8305b4ce00450c7b160016011602bb",
+  "codeHash": "8f409cefd237057d977eed5b7d6f591f005883d9523ada314fad793978d61064",
   "fieldsSig": {
     "names": [
       "admin",
       "auctionTemplate",
+      "loanFactory",
       "auctionNumber",
       "fee",
       "oracle"
     ],
     "types": [
       "Address",
+      "ByteVec",
       "ByteVec",
       "U256",
       "U256",
@@ -21,6 +23,7 @@
     "isMutable": [
       false,
       false,
+      true,
       true,
       true,
       false
@@ -95,6 +98,15 @@
       ]
     },
     {
+      "name": "getLoanFactoryId",
+      "paramNames": [],
+      "paramTypes": [],
+      "paramIsMutable": [],
+      "returnTypes": [
+        "ByteVec"
+      ]
+    },
+    {
       "name": "createAuction",
       "paramNames": [
         "collateral",
@@ -165,6 +177,19 @@
       "returnTypes": []
     },
     {
+      "name": "editLoanFactory",
+      "paramNames": [
+        "factoryId"
+      ],
+      "paramTypes": [
+        "ByteVec"
+      ],
+      "paramIsMutable": [
+        false
+      ],
+      "returnTypes": []
+    },
+    {
       "name": "updateAuctionFactoryCode",
       "paramNames": [
         "newCode"
@@ -188,25 +213,6 @@
         "ByteVec",
         "ByteVec",
         "ByteVec"
-      ],
-      "paramIsMutable": [
-        false,
-        false,
-        false
-      ],
-      "returnTypes": []
-    },
-    {
-      "name": "withdrawAuctionFactoryFees",
-      "paramNames": [
-        "who",
-        "token",
-        "amount"
-      ],
-      "paramTypes": [
-        "Address",
-        "ByteVec",
-        "U256"
       ],
       "paramIsMutable": [
         false,
