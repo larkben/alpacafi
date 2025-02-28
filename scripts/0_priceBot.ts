@@ -1,5 +1,5 @@
 import { Deployer, DeployFunction, Network } from "@alephium/cli";
-import { DUST_AMOUNT, NodeProvider, stringToHex } from "@alephium/web3";
+import { DUST_AMOUNT, NodeProvider, stringToHex, web3 } from "@alephium/web3";
 import { Settings } from "../alephium.config";
 import { getNetwork } from "../scripts/network";
 import { UpdatePair } from "../artifacts/ts";
@@ -14,6 +14,8 @@ if (!privateKey) {
 }
 
 const Signer = new PrivateKeyWallet({ privateKey });
+
+web3.setCurrentNodeProvider("https://node.alphaga.app")
 
 // List of ALPH/TOKEN pools and their decimals
 let pools: [string, number, number, string][] = [
