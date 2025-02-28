@@ -22,39 +22,51 @@ import { default as mainnetDeployments } from "../../deployments/.deployments.ma
 export type Deployments = {
   deployerAddress: string;
   contracts: {
-    AlpacaFiOracle: DeployContractExecutionResult<AlpacaFiOracleInstance>;
-    Loan: DeployContractExecutionResult<LoanInstance>;
-    LoanMarket: DeployContractExecutionResult<LoanMarketInstance>;
-    LoanFactory: DeployContractExecutionResult<LoanFactoryInstance>;
+    AlpacaFiOracle?: DeployContractExecutionResult<AlpacaFiOracleInstance>;
+    Loan?: DeployContractExecutionResult<LoanInstance>;
+    LoanMarket?: DeployContractExecutionResult<LoanMarketInstance>;
+    LoanFactory?: DeployContractExecutionResult<LoanFactoryInstance>;
   };
 };
 
 function toDeployments(json: any): Deployments {
   const contracts = {
-    AlpacaFiOracle: {
-      ...json.contracts["AlpacaFiOracle"],
-      contractInstance: AlpacaFiOracle.at(
-        json.contracts["AlpacaFiOracle"].contractInstance.address
-      ),
-    },
-    Loan: {
-      ...json.contracts["Loan"],
-      contractInstance: Loan.at(
-        json.contracts["Loan"].contractInstance.address
-      ),
-    },
-    LoanMarket: {
-      ...json.contracts["LoanMarket"],
-      contractInstance: LoanMarket.at(
-        json.contracts["LoanMarket"].contractInstance.address
-      ),
-    },
-    LoanFactory: {
-      ...json.contracts["LoanFactory"],
-      contractInstance: LoanFactory.at(
-        json.contracts["LoanFactory"].contractInstance.address
-      ),
-    },
+    AlpacaFiOracle:
+      json.contracts["AlpacaFiOracle"] === undefined
+        ? undefined
+        : {
+            ...json.contracts["AlpacaFiOracle"],
+            contractInstance: AlpacaFiOracle.at(
+              json.contracts["AlpacaFiOracle"].contractInstance.address
+            ),
+          },
+    Loan:
+      json.contracts["Loan"] === undefined
+        ? undefined
+        : {
+            ...json.contracts["Loan"],
+            contractInstance: Loan.at(
+              json.contracts["Loan"].contractInstance.address
+            ),
+          },
+    LoanMarket:
+      json.contracts["LoanMarket"] === undefined
+        ? undefined
+        : {
+            ...json.contracts["LoanMarket"],
+            contractInstance: LoanMarket.at(
+              json.contracts["LoanMarket"].contractInstance.address
+            ),
+          },
+    LoanFactory:
+      json.contracts["LoanFactory"] === undefined
+        ? undefined
+        : {
+            ...json.contracts["LoanFactory"],
+            contractInstance: LoanFactory.at(
+              json.contracts["LoanFactory"].contractInstance.address
+            ),
+          },
   };
   return {
     ...json,

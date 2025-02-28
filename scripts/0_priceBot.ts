@@ -18,10 +18,11 @@ const Signer = new PrivateKeyWallet({ privateKey });
 // List of ALPH/TOKEN pools and their decimals
 let pools: [string, number, number, string][] = [
     ["27Ub32AhfC9ULKGKGUTdDGU2ehvUN55aLS4oU8nmW3x9M", 18, 1, "Elexium"], 
-    ["vX4iFtkRjPWpyUFiHBDmtq8FETxbMUD7Y8W37xfnAU7Z", 18, 0, "AlphPad"], 
-    //["xnRk82YPb61ygM63ozXHjELdpFhGtSjMR7H1wbfQDBY3", 18, 0, "RalphBuilder"],
+    ["vX4iFtkRjPWpyUFiHBDmtq8FETxbMUD7Y8W37xfnAU7Z", 18, 0, "AlphPad"],
     ["zXbdgDuFe82CwhnxVMfJHhJNGT78MWXELf53BRnwXFps", 9, 0, "ALPHBanx"],
-    ["zWgFBQP8UDivtStTpVbp7JL3JBxvJ5VLvpu1kQU1kUwZ", 18, 0, "Binance Coin"]
+    //["zWgFBQP8UDivtStTpVbp7JL3JBxvJ5VLvpu1kQU1kUwZ", 18, 0, "Binance Coin"],
+    ["xnRk82YPb61ygM63ozXHjELdpFhGtSjMR7H1wbfQDBY3", 18, 0, "RalphBuilder"],
+    ["25zYnMyuypUhdyULwt1Zgft5k9dJGc3FGAeozZAFwDmRZ", 18, 0, "Onion"]
 ];
 
 // oracle mapping address for token price comparison
@@ -30,7 +31,9 @@ let oracle_values: [string, string, number][] = [
     ["tyQsV8oZFyqVspcRsUPTUzJ2BusYSJQYBvSnGVD5Ysq1", "EX/USD", 0],
     ["25B55puFNpHq1UiR1Dc9VNxmAprYnzMNDNebx5gByek8P", "APAD/USD", 0],
     ["2485BsD55WdkNJZMvrLuu6B6LZdyRZ44T56nfbUvPZruM", "ABX/USD", 0],
-    ["28MSVtmjp1LsSHg54kpeLMFYKNoXztdJ15wyXkGMP4jC3", "BNB/USD", 0]
+    //["28MSVtmjp1LsSHg54kpeLMFYKNoXztdJ15wyXkGMP4jC3", "BNB/USD", 0],
+    ["wLabQBdPM9NcyPbshXaPH5TZNh1ryLmQ3LqzJzTdiGYw", "BUILD/USD", 0],
+    ["28usNqkYc4MTFqAtKVS2Df2hHQy23tBwHitPVFxFxxW79", "ONION/USD", 0]
 ]
 
 // Function to get ALPH price in USD from the ALPH/USDT pool
