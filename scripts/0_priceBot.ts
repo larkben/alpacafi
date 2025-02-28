@@ -151,6 +151,9 @@ async function main() {
         for (let i = 0; i < pools.length; i++) {
             let [poolAddress, tokenDecimals, tokenInContract, token] = pools[i] as [string, number, number, string];
             let tokenPrice = await getTokenPrice(poolAddress, tokenDecimals, alphPrice, tokenInContract, token);
+
+            await sleep(3)
+
             if (i < oracle_values.length) {
                 let [address, pair, price] = oracle_values[i] as [string, string, number];
                 
