@@ -23,6 +23,7 @@ Contract PoolFactory (
     event PoolCreated(token: ByteVec, address: Address, name: ByteVec, symbol: ByteVec)
     event PoolDeactivated(token: ByteVec, address: Address)
     event PoolReactivated(token: ByteVec, address: Address)
+    event TokenPriceConfigured(token: ByteVec, pricePair: ByteVec, useMainOracle: Bool)
     
     pub fn getPoolsCount() -> U256 {
         return poolCount
@@ -40,7 +41,7 @@ Contract PoolFactory (
             return true, index, poolInfo.poolAddress
         }
         
-        return false, 0, zeroAddress!()
+        return false, 0, nullContractAddress!()
     }
     
     @using(checkExternalCaller = true, updateFields = true, assetsInContract = true)
@@ -57,25 +58,33 @@ Contract PoolFactory (
         let (exists, _, _) = findPoolByToken(token)
         assert!(!exists, 3) // Pool already exists for this token
         
+        // Get registry and check if oracle is configured for this token
+        let reg = Registry(addressToContractId!(registry))
+        let riskManager = RiskManager(addressToContractId!(reg.getRiskManager()))
+        
+        // Check if token price can be obtained - will assert if not configured
+        let tokenPrice = riskManager.getTokenPrice(token)
+        assert!(tokenPrice > 0, 4) // Token price not configured or zero
+        
         // Encode pool creation parameters
-        let (encodedImmFields, encodedMutFields) = Pool.encodeFields!(
-            registry,
-            token,
-            tokenDecimals,
-            name,
-            symbol,
-            0, // sTokenSupply
-            1000000000000000000, // exchangeRate (1.0 in 1e18 precision)
-            0, // totalPoolAssets
-            0, // depositedAmount
-            0, // totalBorrowed
-            0, // reserves
-            blockTimeStamp!(), // lastUpdateTimestamp
-            true  // borrowingEnabled
+        let (encodedImmFields, encodedMutFields) = ImprovedPool.encodeFields!(
+            registry,                // Registry
+            token,                   // Token ID
+            tokenDecimals,           // Decimals
+            name,                    // Pool name
+            symbol,                  // Pool symbol
+            0,                       // sTokenSupply
+            1000000000000000000,     // exchangeRate (1.0 in 1e18 precision)
+            0,                       // totalPoolAssets
+            0,                       // depositedAmount
+            0,                       // totalBorrowed
+            0,                       // reserves
+            blockTimeStamp!(),       // lastUpdateTimestamp
+            true                     // borrowingEnabled
         )
         
         // Create pool contract
-        let poolAddress = createContract!{callerAddress!() -> ALPH : minimalContractDeposit!()}(
+        let poolAddress = createContract!{callerAddress!() -> ALPH : minimalContractDeposit!() * 2}(
             poolTemplate, 
             encodedImmFields, 
             encodedMutFields
@@ -84,7 +93,7 @@ Contract PoolFactory (
         // Create pool info
         let poolInfo = PoolInfo {
             tokenId: token,
-            poolAddress: poolAddress,
+            poolAddress: contractIdToAddress!(poolAddress),
             tokenDecimals: tokenDecimals,
             createdAt: blockTimeStamp!(),
             isActive: true
@@ -100,10 +109,9 @@ Contract PoolFactory (
         poolCount = poolCount + 1
         
         // Register pool in the registry
-        let registryContract = Registry(registry)
-        registryContract.registerPool(poolAddress, token)
+        reg.registerPool(contractIdToAddress!(poolAddress), token)
         
-        emit PoolCreated(token, poolAddress, name, symbol)
+        emit PoolCreated(token, contractIdToAddress!(poolAddress), name, symbol)
         
         return poolAddress
     }
@@ -111,11 +119,11 @@ Contract PoolFactory (
     @using(checkExternalCaller = true, updateFields = true)
     pub fn setPoolStatus(tokenId: ByteVec, active: Bool) -> Bool {
         // Only governance can update pool status
-        checkCaller!(callerAddress!() == governance, 4)
+        checkCaller!(callerAddress!() == governance, 5)
         
         // Find the pool
         let (exists, index, address) = findPoolByToken(tokenId)
-        assert!(exists, 5) // Pool not found
+        assert!(exists, 6) // Pool not found
         
         // Update pool status
         let poolInfo = pools[index]
@@ -138,22 +146,151 @@ Contract PoolFactory (
         return true
     }
     
+    @using(checkExternalCaller = true, assetsInContract = true)
+    pub fn configureTokenPrice(
+        token: ByteVec,
+        pricePair: ByteVec,
+        initialPrice: U256,
+        useMainOracle: Bool
+    ) -> Bool {
+        // Only governance can configure token prices
+        checkCaller!(callerAddress!() == governance, 7)
+        
+        // Get registry and oracles
+        let reg = Registry(registry)
+        let riskManager = RiskManager(reg.getRiskManager())
+        
+        // Select oracle based on parameter
+        let mut oracle = nullContractAddress!()
+        if (mainOracle) {
+            let oracle = reg.getMainOracle()
+        }
+        else {
+            let oracle = reg.getTestOracle()
+        }
+        let oracle = AlpacaFiOracle(oracleAddr)
+        
+        // Add price pair to oracle
+        oracle.insertPair{callerAddress!() -> ALPH: mapEntryDeposit!()}(
+            pricePair,
+            token,
+            initialPrice,
+            8 // Standard 8 decimals for prices
+        )
+        
+        // Configure risk manager to use this oracle pair
+        riskManager.setTokenOraclePair{callerAddress!() -> ALPH: mapEntryDeposit!()}(
+            token,
+            pricePair,
+            8,
+            useMainOracle
+        )
+        
+        emit TokenPriceConfigured(token, pricePair, useMainOracle)
+        
+        return true
+    }
+    
+    @using(checkExternalCaller = true, assetsInContract = true)
+    pub fn configureTokenRiskParams(
+        token: ByteVec,
+        borrowingEnabled: Bool,
+        collateralFactor: U256,
+        liquidationThreshold: U256,
+        liquidationPenalty: U256,
+        borrowCap: U256,
+        supplyCap: U256,
+        reserveFactor: U256
+    ) -> Bool {
+        // Only governance can configure risk parameters
+        checkCaller!(callerAddress!() == governance, 8)
+        
+        // Get registry and risk manager
+        let reg = Registry(registry)
+        let riskManager = RiskManager(reg.getRiskManager())
+        
+        // Set risk parameters
+        riskManager.setTokenRiskParams{callerAddress!() -> ALPH: mapEntryDeposit!()}(
+            token,
+            borrowingEnabled,
+            collateralFactor,
+            liquidationThreshold,
+            liquidationPenalty,
+            borrowCap,
+            supplyCap,
+            reserveFactor
+        )
+        
+        return true
+    }
+    
     @using(checkExternalCaller = true, updateFields = true)
     pub fn updateGovernance(newGovernance: Address) -> () {
-        checkCaller!(callerAddress!() == governance, 6)
+        checkCaller!(callerAddress!() == governance, 9)
         governance = newGovernance
     }
     
     // Helper function to pre-allocate map entries
     @using(checkExternalCaller = true, assetsInContract = true)
     pub fn prepareForPools(numPools: U256) -> () {
-        checkCaller!(callerAddress!() == governance, 7)
+        checkCaller!(callerAddress!() == governance, 10)
         
         // Each pool requires 3 map entries (3 maps per pool)
         let entriesNeeded = numPools * 3
         let deposit = mapEntryDeposit!() * entriesNeeded
         
         // Ensure we have enough ALPH for the map entries
-        assert!(selfBalance!() >= deposit, 8)
+        assert!(selfBalance!() >= deposit, 11)
+    }
+    
+    // Comprehensive function to create a new token pool with all required configuration
+    @using(checkExternalCaller = true, assetsInContract = true)
+    pub fn createTokenPoolWithOracle(
+        token: ByteVec,
+        tokenDecimals: U256,
+        name: ByteVec,
+        symbol: ByteVec,
+        pricePair: ByteVec,
+        initialPrice: U256,
+        collateralFactor: U256,
+        liquidationThreshold: U256,
+        liquidationPenalty: U256,
+        borrowCap: U256,
+        supplyCap: U256,
+        reserveFactor: U256,
+        useMainOracle: Bool
+    ) -> Address {
+        // Only governance can create new pools with complete configuration
+        checkCaller!(callerAddress!() == governance, 12)
+        
+        // Step 1: Configure token price oracle
+        configureTokenPrice(
+            token,
+            pricePair,
+            initialPrice,
+            useMainOracle
+        )
+        
+        // Step 2: Configure risk parameters
+        configureTokenRiskParams(
+            token,
+            true, // borrowingEnabled
+            collateralFactor,
+            liquidationThreshold,
+            liquidationPenalty,
+            borrowCap,
+            supplyCap,
+            reserveFactor
+        )
+        
+        // Step 3: Create the pool
+        let poolAddress = createPool(
+            token,
+            tokenDecimals,
+            name,
+            symbol
+        )
+        
+        return poolAddress
     }
 }

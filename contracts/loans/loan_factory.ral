@@ -1,8 +1,8 @@
 struct PairInfo {
     // need to have decimals for liquidation
-    pair: ByteVec,
+    mut pair: ByteVec,
     mut decimals: U256,
-    oracle: Bool
+    mut oracle: Bool
 }
 
 struct DIAOracleValue {

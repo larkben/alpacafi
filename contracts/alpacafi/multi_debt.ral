@@ -1,21 +1,21 @@
 // MultiDebt.ral
 
 // Constants within contract scope
-const SECONDS_PER_YEAR = 31556926000 // Accurate seconds in a year
+const SECONDS_PER_YEAR = 31556926000 // Accurate seconds in a year (in seconds, not milliseconds)
 const BASIS_POINTS = 10000        // 100% in basis points
 
 struct BorrowPosition {
-    token: ByteVec,
-    amount: U256,
-    interestRate: U256,
-    lastInterestUpdate: U256,
-    poolAddress: Address
+    mut token: ByteVec,
+    mut amount: U256,
+    mut interestRate: U256,
+    mut lastInterestUpdate: U256,
+    mut poolAddress: Address
 }
 
 struct CollateralPosition {
-    token: ByteVec,
-    amount: U256,
-    poolAddress: Address
+    mut token: ByteVec,
+    mut amount: U256,
+    mut poolAddress: Address
 }
 
 Contract MultiDebt (
@@ -60,12 +60,12 @@ Contract MultiDebt (
     }
     
     pub fn getBorrowTokenAtIndex(index: U256) -> ByteVec {
-        assert!(index < borrowTokenCount, 0)
+        assert!(index < borrowTokenCount, 1) // Index out of bounds
         return borrowTokenByIndex[index]
     }
     
     pub fn getCollateralTokenAtIndex(index: U256) -> ByteVec {
-        assert!(index < collateralTokenCount, 0)
+        assert!(index < collateralTokenCount, 2) // Index out of bounds
         return collateralTokenByIndex[index]
     }
     
@@ -80,7 +80,7 @@ Contract MultiDebt (
             amount: 0,
             interestRate: 0,
             lastInterestUpdate: 0,
-            poolAddress: zeroAddress!()
+            poolAddress: nullContractAddress!()
         }
         
         return false, emptyPosition
@@ -95,7 +95,7 @@ Contract MultiDebt (
         let emptyPosition = CollateralPosition {
             token: token,
             amount: 0,
-            poolAddress: zeroAddress!()
+            poolAddress: nullContractAddress!()
         }
         
         return false, emptyPosition
@@ -125,9 +125,35 @@ Contract MultiDebt (
         return position.amount + interest
     }
     
+    // Returns total borrow amount across all tokens
+    pub fn getTotalBorrowAmount() -> U256 {
+        let mut total = 0
+        
+        for (let mut i = 0; i < borrowTokenCount; i = i + 1) {
+            let token = borrowTokenByIndex[i]
+            let repayment = calculateRepayment(token)
+            total = total + repayment
+        }
+        
+        return total
+    }
+    
+    // Returns total collateral amount across all tokens
+    pub fn getTotalCollateralAmount() -> U256 {
+        let mut total = 0
+        
+        for (let mut i = 0; i < collateralTokenCount; i = i + 1) {
+            let token = collateralTokenByIndex[i]
+            let (_, position) = getCollateralPosition(token)
+            total = total + position.amount
+        }
+        
+        return total
+    }
+    
     @using(checkExternalCaller = true, updateFields = true, assetsInContract = true)
     pub fn addBorrow(token: ByteVec, amount: U256, interestRate: U256, pool: Address) -> () {
-        checkCaller!(callerAddress!() == parentContract, 1)
+        checkCaller!(callerAddress!() == parentContract, 3) // Not authorized
         
         if (borrowTokenExists.contains!(token)) {
             // Update existing position
@@ -169,7 +195,7 @@ Contract MultiDebt (
     
     @using(checkExternalCaller = true, updateFields = true, assetsInContract = true)
     pub fn repayBorrow(token: ByteVec, amount: U256) -> U256 {
-        checkCaller!(callerAddress!() == parentContract, 1)
+        checkCaller!(callerAddress!() == parentContract, 3) // Not authorized
         
         if (!borrowTokenExists.contains!(token)) {
             return 0
@@ -249,7 +275,7 @@ Contract MultiDebt (
     
     @using(checkExternalCaller = true, updateFields = true, assetsInContract = true)
     pub fn addCollateral(token: ByteVec, amount: U256, pool: Address) -> () {
-        checkCaller!(callerAddress!() == parentContract, 1)
+        checkCaller!(callerAddress!() == parentContract, 3) // Not authorized
         
         if (collateralTokenExists.contains!(token)) {
             // Update existing position
@@ -283,7 +309,7 @@ Contract MultiDebt (
     
     @using(checkExternalCaller = true, updateFields = true, assetsInContract = true)
     pub fn removeCollateral(token: ByteVec, amount: U256) -> Bool {
-        checkCaller!(callerAddress!() == parentContract, 1)
+        checkCaller!(callerAddress!() == parentContract, 3) // Not authorized
         
         if (!collateralTokenExists.contains!(token)) {
             return false
@@ -331,12 +357,36 @@ Contract MultiDebt (
         return true
     }
     
+    // Get a list of all borrow tokens as a ByteVec (for external processing)
+    pub fn getBorrowTokenList() -> ByteVec {
+        let mut result = b``
+        
+        for (let mut i = 0; i < borrowTokenCount; i = i + 1) {
+            let token = borrowTokenByIndex[i]
+            result = result ++ token
+        }
+        
+        return result
+    }
+    
+    // Get a list of all collateral tokens as a ByteVec (for external processing)
+    pub fn getCollateralTokenList() -> ByteVec {
+        let mut result = b``
+        
+        for (let mut i = 0; i < collateralTokenCount; i = i + 1) {
+            let token = collateralTokenByIndex[i]
+            result = result ++ token
+        }
+        
+        return result
+    }
+    
     @using(checkExternalCaller = true, assetsInContract = true)
     pub fn destroyDebt(caller: Address) -> () {
-        checkCaller!(callerAddress!() == parentContract, 1)
+        checkCaller!(callerAddress!() == parentContract, 3) // Not authorized
         
         // Verify all debts are repaid
-        assert!(borrowTokenCount == 0, 2)
+        assert!(borrowTokenCount == 0, 4) // Not all debts are repaid
         
         destroySelf!(caller)
     }

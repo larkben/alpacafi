@@ -67,10 +67,8 @@ Contract DebtManager (
             0
         )
         
-        let value = encodeToByteVec!(debtId, borrower, blockTimeStamp!())
-        
         let debtContractId = copyCreateSubContract!{callerAddress!() -> ALPH: minimalContractDeposit!() * 2}(
-            value,
+            encodeToByteVec!(debtCount, borrower, blockTimeStamp!()),
             debtTemplate,
             encodeImmutableFields,
             encodeMutableFields
@@ -79,30 +77,31 @@ Contract DebtManager (
         // Store debt position
         let debtPosition = DebtPosition {
             borrower: borrower,
-            contractId: value,
+            contractId: debtContractId,
             active: true,
             createdAt: blockTimeStamp!(),
             lastUpdatedAt: blockTimeStamp!()
         }
         
-        debtPositions.insert!(borrower, debtId, debtPosition)
+        debtPositions.insert!(governance, debtId, debtPosition)
         
         // Update borrower's debts
         let currentDebts = b`` // null default
         
-        if (borrowerDebts.contains!(borrower) == false) {
-            // insert since debt doesnt exist
-            borrowerDebts.insert!(borrower, borrower, currentDebts)
+        if (!borrowerDebts.contains!(borrower)) {
+            // insert since debt doesn't exist
+            borrowerDebts.insert!(governance, borrower, currentDebts)
         }
         
         // push to array (u256)
-        let array = DynamicArrayForInt(dynamicArray).push(borrowerDebts[borrower], debtId)
+        let dynamicArrayContract = DynamicArrayForInt(dynamicArray)
+        let array = dynamicArrayContract.push(borrowerDebts[borrower], debtId)
         
         borrowerDebts[borrower] = array
         
-        emit DebtCreated(debtId, borrower, value)
+        emit DebtCreated(debtId, borrower, debtContractId)
         
-        return debtId, value
+        return debtId, debtContractId
     }
     
     @using(checkExternalCaller = false, updateFields = true)
@@ -209,8 +208,6 @@ Contract DebtManager (
             lastUpdatedAt: blockTimeStamp!()
         }
         
-        //debtPositions.put(debtId, updatedPosition)
-
         debtPositions[debtId] = updatedPosition
         
         emit DebtUpdated(debtId, b`repayBorrow`)
@@ -263,8 +260,8 @@ Contract DebtManager (
         let debt = MultiDebt(subContractId!(debtPosition.contractId))
         
         // Check if all borrows have been repaid
-        let borrowPositions = debt.getBorrowPosition()
-        assert!(borrowPositions.size() == 0, 12) // Not all borrows have been repaid
+        let borrowPositionsCount = debt.getBorrowPositionsCount()
+        assert!(borrowPositionsCount == 0, 12) // Not all borrows have been repaid
         
         // Mark debt position as inactive
         let updatedPosition = DebtPosition {
@@ -275,8 +272,6 @@ Contract DebtManager (
             lastUpdatedAt: blockTimeStamp!()
         }
         
-        //debtPositions.put(debtId, updatedPosition)
-
         debtPositions[debtId] = updatedPosition
         
         emit DebtRepaid(debtId, debtPosition.borrower)
@@ -302,8 +297,6 @@ Contract DebtManager (
             lastUpdatedAt: blockTimeStamp!()
         }
         
-        //debtPositions.put(debtId, updatedPosition)
-
         debtPositions[debtId] = updatedPosition
         
         emit DebtLiquidated(debtId, debtPosition.borrower, liquidator)
@@ -311,9 +304,45 @@ Contract DebtManager (
         return true
     }
     
+    // Function to get all the active debt IDs for monitoring
+    pub fn getActiveDebtIds() -> ByteVec {
+        let dynamicArrayContract = DynamicArrayForInt(dynamicArray)
+        let mut activeIds = b``
+        
+        for (let mut i = 0; i < debtCount; i = i + 1) {
+            if (debtPositions.contains!(i)) {
+                let position = debtPositions[i]
+                if (position.active) {
+                    activeIds = dynamicArrayContract.push(activeIds, i)
+                }
+            }
+        }
+        
+        return activeIds
+    }
+    
+    // Function to get details about a debt position, including collateral and borrows
+    pub fn getPositionDetails(debtId: U256) -> (Address, Bool, U256, U256, U256) {
+        let debtPosition = getDebtPosition(debtId)
+        let debt = MultiDebt(subContractId!(debtPosition.contractId))
+        
+        // Get counts
+        let borrowCount = debt.getBorrowPositionsCount()
+        let collateralCount = debt.getCollateralPositionsCount()
+        
+        // Return details
+        return debtPosition.borrower, debtPosition.active, debtPosition.createdAt, borrowCount, collateralCount
+    }
+    
     @using(checkExternalCaller = true, updateFields = true)
     pub fn updateGovernance(newGovernance: Address) -> () {
         checkCaller!(callerAddress!() == governance, 15)
         governance = newGovernance
+    }
+    
+    @using(checkExternalCaller = true, updateFields = true)
+    pub fn updateDynamicArray(newDynamicArray: ByteVec) -> () {
+        checkCaller!(callerAddress!() == governance, 16)
+        dynamicArray = newDynamicArray
     }
 }

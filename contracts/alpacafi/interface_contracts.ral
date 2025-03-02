@@ -28,10 +28,10 @@ Interface IInterestRateModel {
 
 // Dynamic interest rate model
 Contract DynamicInterestRateModel(
-    baseRate: U256,          // Base interest rate when utilization is 0
-    multiplier: U256,        // Rate multiplier as utilization increases
-    jumpMultiplier: U256,    // Multiplier after optimal utilization point
-    optimal: U256,           // Optimal utilization point (e.g., 8000 = 80%)
+    mut baseRate: U256,          // Base interest rate when utilization is 0
+    mut multiplier: U256,        // Rate multiplier as utilization increases
+    mut jumpMultiplier: U256,    // Multiplier after optimal utilization point
+    mut optimal: U256,           // Optimal utilization point (e.g., 8000 = 80%)
     mut governance: Address
 ) implements IInterestRateModel {
     

@@ -1,18 +1,20 @@
-// RiskManager.ral - Fixed to use RALPH-compatible mapping
+// RiskManager.ral
 
 struct TokenRiskParams {
     // All in basis points (10000 = 100%)
-    borrowingEnabled: Bool,      // Whether borrowing is enabled
-    collateralFactor: U256,      // Max percentage of collateral value that can be borrowed (e.g., 7500 = 75%)
-    liquidationThreshold: U256,  // Percentage at which position can be liquidated (e.g., 8250 = 82.5%)
-    liquidationPenalty: U256,    // Penalty added during liquidation (e.g., 500 = 5%)
-    borrowCap: U256,             // Maximum amount that can be borrowed from the protocol
-    supplyCap: U256,             // Maximum amount that can be supplied to the protocol
-    reserveFactor: U256          // Percentage of interest that goes to reserves (e.g., 1000 = 10%)
+    mut borrowingEnabled: Bool,      // Whether borrowing is enabled
+    mut collateralFactor: U256,      // Max percentage of collateral value that can be borrowed (e.g., 7500 = 75%)
+    mut liquidationThreshold: U256,  // Percentage at which position can be liquidated (e.g., 8250 = 82.5%)
+    mut liquidationPenalty: U256,    // Penalty added during liquidation (e.g., 500 = 5%)
+    mut borrowCap: U256,             // Maximum amount that can be borrowed from the protocol
+    mut supplyCap: U256,             // Maximum amount that can be supplied to the protocol
+    mut reserveFactor: U256          // Percentage of interest that goes to reserves (e.g., 1000 = 10%)
 }
 
 Contract RiskManager (
     registry: Address,
+    oracle: Address,     // Main price oracle address
+    testOracle: Address, // Test oracle address for development
     mut governance: Address
 ) {
     // Token ID => Risk Parameters
@@ -21,16 +23,14 @@ Contract RiskManager (
     // Flattened collateral pair eligibility mappings
     // Key format: collateralToken + borrowToken => Bool
     mapping[ByteVec, Bool] collateralPairEligibility
-
+    
+    // Token => Oracle pair configuration
     mapping[ByteVec, PairInfo] tokenPairs
     
     // Events
     event RiskParamsUpdated(token: ByteVec, collateralFactor: U256, liquidationThreshold: U256)
     event CollateralPairUpdated(collateralToken: ByteVec, borrowToken: ByteVec, eligible: Bool)
-
-    fn getTokenPairInfo() -> PairInfo {
-
-    }
+    event OraclePairUpdated(token: ByteVec, pair: ByteVec, decimals: U256, useMainOracle: Bool)
     
     // Helper function to create compound key
     fn createPairKey(collateralToken: ByteVec, borrowToken: ByteVec) -> ByteVec {
@@ -39,8 +39,7 @@ Contract RiskManager (
     
     // Default risk parameters
     fn getDefaultRiskParams() -> TokenRiskParams {
-
-        let b = TokenRiskParams {
+        return TokenRiskParams {
             borrowingEnabled: false,
             collateralFactor: 7500,     // 75%
             liquidationThreshold: 8250, // 82.5%
@@ -49,8 +48,6 @@ Contract RiskManager (
             supplyCap: 1000000000000000000000000000, // 1 billion tokens
             reserveFactor: 1000         // 10%
         }
-
-        return b
     }
     
     pub fn getTokenRiskParams(token: ByteVec) -> TokenRiskParams {
@@ -71,17 +68,38 @@ Contract RiskManager (
         return false // By default, pairs are not eligible
     }
     
-    // Modified to work with the MultiDebt implementation
+    // Get token price from oracle with fallback
+    pub fn getTokenPrice(token: ByteVec) -> U256 {
+        if (!tokenPairs.contains!(token)) {
+            return 0 // Token not configured
+        }
+        
+        let pairInfo = tokenPairs[token]
+        
+        if (pairInfo.oracle) {
+            // Use main oracle
+            let priceOracle = AlpacaFiOracle(addressToContractId!(oracle))
+            let oracleData = priceOracle.getValue(pairInfo.pair)
+            return oracleData.value
+        } else {
+            // Use test oracle for development
+            let priceOracle = AlpacaFiOracle(addressToContractId!(testOracle))
+            let oracleData = priceOracle.getValue(pairInfo.pair)
+            return oracleData.value
+        }
+    }
+    
+    // Modified to work with the MultiDebt implementation and oracle integration
     pub fn checkHealthFactor(debtId: U256) -> (U256, Bool) {
-        let registry = Registry(registry)
-        let debtManager = DebtManager(registry.getDebtManager())
+        let reg = Registry(addressToContractId!(registry))
+        let debtManager = DebtManager(addressToContractId!(reg.getDebtManager()))
         
         // Get the debt position
         let debtPosition = debtManager.getDebtPosition(debtId)
         let debt = MultiDebt(subContractId!(debtPosition.contractId))
         
-        let totalBorrowValueInUSD = 0
-        let totalCollateralValueInUSD = 0
+        let mut totalBorrowValueInUSD = 0
+        let mut totalCollateralValueInUSD = 0
         
         // Calculate total borrow value by iterating through all borrow positions
         let borrowCount = debt.getBorrowPositionsCount()
@@ -93,20 +111,13 @@ Contract RiskManager (
             
             if (exists) {
                 let totalDebtForToken = debt.calculateRepayment(token)
-
-                let condition = tokenPairs[token]
-                let mut tokenPrice = 0
-
-                if (condition.oracle) {
-                    tokenPrice = TestOracle(oracle).getValue(tokenPairs[tokenRequested].pair).value
-                }
-                else {
-                    tokenPrice = AlpacaFiOracle(alpaca).getValue(tokenPairs[tokenRequested].pair).value
-                }
+                let tokenPrice = getTokenPrice(token)
                 
-                // Convert to USD value (assuming price is in USD with 8 decimals)
-                let borrowValueInUSD = (totalDebtForToken * tokenPrice) / (10 |**| 8)
-                totalBorrowValueInUSD = totalBorrowValueInUSD + borrowValueInUSD
+                if (tokenPrice > 0) {
+                    // Convert to USD value (assuming price is in USD with 8 decimals)
+                    let borrowValueInUSD = (totalDebtForToken * tokenPrice) / (10 |**| 8)
+                    totalBorrowValueInUSD = totalBorrowValueInUSD + borrowValueInUSD
+                }
             }
             
             i = i + 1
@@ -121,30 +132,24 @@ Contract RiskManager (
             let (exists, position) = debt.getCollateralPosition(token)
             
             if (exists) {
-                let condition = tokenPairs[token]
-                let mut tokenPrice = 0
-
-                if (condition.oracle) {
-                    tokenPrice = TestOracle(oracle).getValue(tokenPairs[tokenRequested].pair).value
-                }
-                else {
-                    tokenPrice = AlpacaFiOracle(alpaca).getValue(tokenPairs[tokenRequested].pair).value
-                }
-
-                let riskParams = getTokenRiskParams(token)
+                let tokenPrice = getTokenPrice(token)
                 
-                // Convert to USD value and apply collateral factor
-                let collateralValueInUSD = (position.amount * tokenPrice) / (10 |**| 8)
-                let adjustedCollateralValue = (collateralValueInUSD * riskParams.collateralFactor) / 10000
-                
-                totalCollateralValueInUSD = totalCollateralValueInUSD + adjustedCollateralValue
+                if (tokenPrice > 0) {
+                    let riskParams = getTokenRiskParams(token)
+                    
+                    // Convert to USD value and apply collateral factor
+                    let collateralValueInUSD = (position.amount * tokenPrice) / (10 |**| 8)
+                    let adjustedCollateralValue = (collateralValueInUSD * riskParams.collateralFactor) / 10000
+                    
+                    totalCollateralValueInUSD = totalCollateralValueInUSD + adjustedCollateralValue
+                }
             }
             
             j = j + 1
         }
         
         // Calculate health factor (scaled by 10000 for precision)
-        let healthFactor = 0
+        let mut healthFactor = 0
         if (totalBorrowValueInUSD > 0) {
             healthFactor = (totalCollateralValueInUSD * 10000) / totalBorrowValueInUSD
         } else {
@@ -227,30 +232,28 @@ Contract RiskManager (
         checkCaller!(callerAddress!() == governance, 7)
         
         // Calculate total entries needed
-        let totalEntries = numTokens + numPairs
+        let totalEntries = numTokens * 2 + numPairs // Risk params + oracle pairs + collateral pairs
         let deposit = mapEntryDeposit!() * totalEntries
-        
-        // Ensure we have enough ALPH for the map entries
-        assert!(selfBalance!() >= deposit, 8)
     }
 
-    // oracle support
-    @using(checkExternalCaller = true, preapprovedAssets = true)
-    pub fn setDebtOraclePairs(token: ByteVec, pair: ByteVec, decimals: U256, oracle: Bool, add: Bool) -> () {
-        checkCaller!(callerAddress!() == governance)
+    // Oracle configuration for tokens
+    @using(checkExternalCaller = true, assetsInContract = true)
+    pub fn setTokenOraclePair(token: ByteVec, pair: ByteVec, decimals: U256, useMainOracle: Bool) -> () {
+        checkCaller!(callerAddress!() == governance, 9)
         
-        if (add) {
-            let b = PairInfo {
-                pair: pair,
-                decimals: decimals,
-                oracle: oracle
-            }
-
-            tokenPairs.insert!(callerAddress!(), token, b)
+        let pairInfo = PairInfo {
+            pair: pair,
+            decimals: decimals,
+            oracle: useMainOracle
         }
-
-        else {
-            tokenPairs.remove!(callerAddress!(), token)
+        
+        // Check if entry exists, otherwise create it
+        if (tokenPairs.contains!(token)) {
+            tokenPairs[token] = pairInfo
+        } else {
+            tokenPairs.insert!(governance, token, pairInfo)
         }
+        
+        emit OraclePairUpdated(token, pair, decimals, useMainOracle)
     }
 }

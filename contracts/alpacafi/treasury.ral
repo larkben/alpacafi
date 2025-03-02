@@ -1,9 +1,9 @@
 // Treasury.ral - Manages protocol fees and reserves
 
 struct ReserveInfo {
-    token: ByteVec,
-    amount: U256,
-    lastCollected: U256
+    mut token: ByteVec,
+    mut amount: U256,
+    mut lastCollected: U256
 }
 
 Contract Treasury (
@@ -41,12 +41,12 @@ Contract Treasury (
     
     @using(checkExternalCaller = false, assetsInContract = true, preapprovedAssets = true, updateFields = true)
     pub fn collectReserves(token: ByteVec) -> U256 {
-        let registry = Registry(registry)
-        let poolAddress = registry.getPoolByToken(token)
+        let reg = Registry(addressToContractId!(registry))
+        let poolAddress = reg.getPoolByToken(token)
         
-        assert!(poolAddress != zeroAddress!(), 1) // Pool not found for token
+        assert!(poolAddress != nullContractAddress!(), 1) // Pool not found for token
         
-        let pool = Pool(poolAddress)
+        let pool = ImprovedPool(addressToContractId!(poolAddress))
         
         // Get current reserves
         let (_, _, _, _, currentReserves) = pool.getPoolMetrics()
@@ -128,9 +128,6 @@ Contract Treasury (
         
         // Calculate deposit needed for map entries
         let deposit = mapEntryDeposit!() * numTokens
-        
-        // Ensure we have enough ALPH for the map entries
-        assert!(selfBalance!() >= deposit, 7)
     }
 }
 

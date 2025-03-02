@@ -1,12 +1,14 @@
 // Registry.ral - Central hub for protocol coordination
 Contract Registry (
     admin: Address,
-    mut governance: Address,
-    mut poolFactory: Address,
-    mut riskManager: Address,
-    // debt / treasury / pools
-    mut debtManager: Address,
-    mut treasury: Address,
+    governance: Address,
+    poolFactory: Address,
+    riskManager: Address,
+    oracleManager: Address,
+    debtManager: Address,
+    treasury: Address,
+    mainOracle: Address,      // Main price oracle
+    testOracle: Address,      // Test price oracle
     mut poolsCount: U256
 ) {
     // Store pools by token ID
@@ -40,11 +42,19 @@ Contract Registry (
         return governance
     }
     
+    pub fn getMainOracle() -> Address {
+        return mainOracle
+    }
+    
+    pub fn getTestOracle() -> Address {
+        return testOracle
+    }
+    
     pub fn getPoolByToken(token: ByteVec) -> Address {
         if (pools.contains!(token)) {
             return pools[token]
         }
-        return zeroAddress!()
+        return nullContractAddress!()
     }
     
     @using(checkExternalCaller = true, updateFields = true, assetsInContract = true)
@@ -62,78 +72,4 @@ Contract Registry (
         
         return poolId
     }
-    
-    @using(checkExternalCaller = true, updateFields = true)
-    pub fn updateComponent(componentType: ByteVec, newAddress: Address) -> () {
-        // Only governance can update components
-        checkCaller!(callerAddress!() == governance, 2)
-        
-        // Update the appropriate component based on type
-        if (componentType == b`poolFactory`) {
-            poolFactory = newAddress
-        } else if (componentType == b`riskManager`) {
-            riskManager = newAddress
-        } else if (componentType == b`oracleManager`) {
-            oracleManager = newAddress
-        } else if (componentType == b`debtManager`) {
-            debtManager = newAddress
-        } else if (componentType == b`treasury`) {
-            treasury = newAddress
-        } else if (componentType == b`governance`) {
-            governance = newAddress
-        } else {
-            assert!(false, 3) // Invalid component type
-        }
-        
-        emit ComponentUpdated(componentType, newAddress)
-    }
-    
-    @using(checkExternalCaller = true)
-    pub fn isPoolRegistered(token: ByteVec) -> Bool {
-        return pools.contains!(token)
-    }
-    
-    @using(checkExternalCaller = true, assetsInContract = true)
-    pub fn prepareForPools(numTokens: U256) -> () {
-        // Only admin can prepare for pools
-        checkCaller!(callerAddress!() == admin, 4)
-        
-        // Calculate deposit needed for map entries
-        let deposit = mapEntryDeposit!() * numTokens
-        
-        // Ensure we have enough ALPH for the map entries
-        assert!(selfBalance!() >= deposit, 5)
-    }
-}
-
-// Transaction script for creating a Registry
-TxScript CreateRegistry(
-    registryCode: ByteVec,
-    admin: Address,
-    governance: Address,
-    initialMapEntries: U256
-) {
-    let caller = callerAddress!()
-    
-    // Calculate required deposit for initial map entries
-    let mapDeposit = mapEntryDeposit!() * initialMapEntries
-    let contractDeposit = minimalContractDeposit!() + mapDeposit
-    
-    // Create registry contract
-    let (immFields, mutFields) = Registry.encodeFields!(
-        admin,
-        governance,
-        zeroAddress!(), // poolFactory (to be updated later)
-        zeroAddress!(), // riskManager (to be updated later)
-        zeroAddress!(), // oracleManager (to be updated later)
-        zeroAddress!(), // debtManager (to be updated later)
-        zeroAddress!(), // treasury (to be updated later)
-        0              // poolsCount
-    )
-    
-    createContract!{caller -> ALPH: contractDeposit}(
-        registryCode,
-        immFields,
-        mutFields
-    )
 }
