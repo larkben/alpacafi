@@ -1,11 +1,11 @@
 // DebtManager.ral - Manages borrowing, collateral, and debt positions
 
 struct DebtPosition {
-    borrower: Address,
-    contractId: ByteVec,
-    active: Bool,
-    createdAt: U256,
-    lastUpdatedAt: U256
+    mut borrower: Address,
+    mut contractId: ByteVec,
+    mut active: Bool,
+    mut createdAt: U256,
+    mut lastUpdatedAt: U256
 }
 
 Contract DebtManager (
@@ -62,7 +62,9 @@ Contract DebtManager (
             borrower,
             blockTimeStamp!(),
             debtId,
-            selfAddress!()
+            selfAddress!(),
+            0,
+            0
         )
         
         let value = encodeToByteVec!(debtId, borrower, blockTimeStamp!())
@@ -86,11 +88,11 @@ Contract DebtManager (
         debtPositions.insert!(borrower, debtId, debtPosition)
         
         // Update borrower's debts
-        let mut currentDebts = b`` // null default
+        let currentDebts = b`` // null default
         
         if (borrowerDebts.contains!(borrower) == false) {
             // insert since debt doesnt exist
-            borrowerDebts.insert!(borrower, borrower, b``)
+            borrowerDebts.insert!(borrower, borrower, currentDebts)
         }
         
         // push to array (u256)
@@ -113,12 +115,12 @@ Contract DebtManager (
         let debtPosition = getDebtPosition(debtId)
         assert!(debtPosition.active, 3) // Debt position not active
         
-        let registry = Registry(registry)
-        let riskManager = RiskManager(registry.getRiskManager())
+        let reg = Registry(addressToContractId!(registry))
+        let riskManager = RiskManager(addressToContractId!(reg.getRiskManager()))
         
         // Get the pool address for this token
-        let pool = registry.getPoolByToken(token)
-        assert!(pool != zeroAddress!(), 4) // Pool not found for token
+        let pool = reg.getPoolByToken(token)
+        assert!(pool != nullContractAddress!(), 4) // Pool not found for token
         
         // Get the debt contract
         let debt = MultiDebt(subContractId!(debtPosition.contractId))
@@ -155,11 +157,11 @@ Contract DebtManager (
         let debtPosition = getDebtPosition(debtId)
         assert!(debtPosition.active, 6) // Debt position not active
         
-        let registry = Registry(registry)
+        let reg = Registry(addressToContractId!(registry))
         
         // Get the pool address for this token
-        let pool = registry.getPoolByToken(token)
-        assert!(pool != zeroAddress!(), 7) // Pool not found for token
+        let pool = reg.getPoolByToken(token)
+        assert!(pool != nullContractAddress!(), 7) // Pool not found for token
         
         // Get the debt contract
         let debt = MultiDebt(subContractId!(debtPosition.contractId))
@@ -261,7 +263,7 @@ Contract DebtManager (
         let debt = MultiDebt(subContractId!(debtPosition.contractId))
         
         // Check if all borrows have been repaid
-        let borrowPositions = debt.getBorrowPositions()
+        let borrowPositions = debt.getBorrowPosition()
         assert!(borrowPositions.size() == 0, 12) // Not all borrows have been repaid
         
         // Mark debt position as inactive

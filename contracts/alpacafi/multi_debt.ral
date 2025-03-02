@@ -341,33 +341,3 @@ Contract MultiDebt (
         destroySelf!(caller)
     }
 }
-
-// Transaction script example for creating a MultiDebt contract
-TxScript CreateMultiDebt(
-    debtCode: ByteVec,
-    borrower: Address,
-    debtId: U256,
-    parentContract: Address
-) {
-    let caller = callerAddress!()
-    
-    // Calculate needed deposit for initial map entries
-    let initialMapEntryCount = 6 // For our map types
-    let requiredDeposit = minimalContractDeposit!() + (mapEntryDeposit!() * initialMapEntryCount)
-    
-    // Create the debt contract with enough ALPH for map entries
-    let (immFields, mutFields) = MultiDebt.encodeFields!(
-        borrower,
-        blockTimeStamp!(),
-        debtId,
-        parentContract,
-        0, // borrowTokenCount
-        0  // collateralTokenCount
-    )
-    
-    createContract!{caller -> ALPH: requiredDeposit}(
-        debtCode,
-        immFields,
-        mutFields
-    )
-}
