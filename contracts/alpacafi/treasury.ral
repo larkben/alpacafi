@@ -1,0 +1,152 @@
+// Treasury.ral - Manages protocol fees and reserves
+
+struct ReserveInfo {
+    token: ByteVec,
+    amount: U256,
+    lastCollected: U256
+}
+
+Contract Treasury (
+    registry: Address,
+    mut governance: Address,
+    mut feeCollector: Address
+) { 
+    // Token => Reserve Info
+    mapping[ByteVec, ReserveInfo] reserves
+    
+    // Events
+    event ReservesCollected(token: ByteVec, amount: U256, pool: Address)
+    event FeesWithdrawn(token: ByteVec, amount: U256, recipient: Address)
+    event CollectorUpdated(oldCollector: Address, newCollector: Address)
+    
+    pub fn getReserveInfo(token: ByteVec) -> ReserveInfo {
+        if (reserves.contains!(token)) {
+            return reserves[token]
+        }
+        
+        return ReserveInfo {
+            token: token,
+            amount: 0,
+            lastCollected: 0
+        }
+    }
+    
+    pub fn getBalance(token: ByteVec) -> U256 {
+        if (reserves.contains!(token)) {
+            return reserves[token].amount
+        }
+        
+        return 0
+    }
+    
+    @using(checkExternalCaller = false, assetsInContract = true, preapprovedAssets = true, updateFields = true)
+    pub fn collectReserves(token: ByteVec) -> U256 {
+        let registry = Registry(registry)
+        let poolAddress = registry.getPoolByToken(token)
+        
+        assert!(poolAddress != zeroAddress!(), 1) // Pool not found for token
+        
+        let pool = Pool(poolAddress)
+        
+        // Get current reserves
+        let (_, _, _, _, currentReserves) = pool.getPoolMetrics()
+        
+        if (currentReserves > 0) {
+            // Collect reserves from pool
+            let success = pool.collectReserves(currentReserves)
+            
+            if (success) {
+                // Update reserves in treasury
+                let reserveInfo = getReserveInfo(token)
+                
+                let updatedReserve = ReserveInfo {
+                    token: token,
+                    amount: reserveInfo.amount + currentReserves,
+                    lastCollected: blockTimeStamp!()
+                }
+                
+                // Store or update reserve info
+                if (reserves.contains!(token)) {
+                    reserves[token] = updatedReserve
+                } else {
+                    reserves.insert!(governance, token, updatedReserve)
+                }
+                
+                emit ReservesCollected(token, currentReserves, poolAddress)
+                
+                return currentReserves
+            }
+        }
+        
+        return 0
+    }
+    
+    @using(checkExternalCaller = true, assetsInContract = true, updateFields = true)
+    pub fn withdrawFees(token: ByteVec, amount: U256) -> Bool {
+        checkCaller!(callerAddress!() == governance || callerAddress!() == feeCollector, 2)
+        
+        let reserveInfo = getReserveInfo(token)
+        
+        assert!(amount <= reserveInfo.amount, 3) // Insufficient balance
+        
+        // Update reserve info
+        let updatedReserve = ReserveInfo {
+            token: token,
+            amount: reserveInfo.amount - amount,
+            lastCollected: reserveInfo.lastCollected
+        }
+        
+        reserves[token] = updatedReserve
+        
+        // Transfer tokens to fee collector
+        transferToken!(selfAddress!(), feeCollector, token, amount)
+        
+        emit FeesWithdrawn(token, amount, feeCollector)
+        
+        return true
+    }
+    
+    @using(checkExternalCaller = true, updateFields = true)
+    pub fn updateFeeCollector(newCollector: Address) -> () {
+        checkCaller!(callerAddress!() == governance, 4)
+        
+        let oldCollector = feeCollector
+        feeCollector = newCollector
+        
+        emit CollectorUpdated(oldCollector, newCollector)
+    }
+    
+    @using(checkExternalCaller = true, updateFields = true)
+    pub fn updateGovernance(newGovernance: Address) -> () {
+        checkCaller!(callerAddress!() == governance, 5)
+        governance = newGovernance
+    }
+    
+    @using(checkExternalCaller = true, assetsInContract = true)
+    pub fn prepareForTokens(numTokens: U256) -> () {
+        checkCaller!(callerAddress!() == governance, 6)
+        
+        // Calculate deposit needed for map entries
+        let deposit = mapEntryDeposit!() * numTokens
+        
+        // Ensure we have enough ALPH for the map entries
+        assert!(selfBalance!() >= deposit, 7)
+    }
+}
+
+// Transaction script for collecting reserves
+TxScript CollectReserves(
+    treasury: Treasury,
+    token: ByteVec
+) {
+    treasury.collectReserves{callerAddress!() -> ALPH: dustAmount!() * 4}(token)
+}
+
+// Transaction script for withdrawing fees
+TxScript WithdrawFees(
+    treasury: Treasury,
+    token: ByteVec,
+    amount: U256
+) {
+    treasury.withdrawFees(token, amount)
+}

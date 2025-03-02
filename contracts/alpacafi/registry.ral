@@ -1,0 +1,142 @@
+// Registry.ral - Central hub for protocol coordination
+Contract Registry (
+    admin: Address,
+    mut governance: Address,
+    mut poolFactory: Address,
+    mut riskManager: Address,
+    // oracles
+    mut oracleManager: Address,
+    mut oracleAlpacaFi: Address,
+    // debt / treasury / pools
+    mut debtManager: Address,
+    mut treasury: Address,
+    mut poolsCount: U256
+) {
+    // Store pools by token ID
+    mapping[ByteVec, Address] pools
+    
+    // Events
+    event PoolAdded(poolId: U256, poolAddress: Address, token: ByteVec)
+    event ComponentUpdated(componentName: ByteVec, newAddress: Address)
+    
+    pub fn getPoolFactory() -> Address {
+        return poolFactory
+    }
+    
+    pub fn getRiskManager() -> Address {
+        return riskManager
+    }
+    
+    pub fn getOracleManager() -> Address {
+        return oracleManager
+    }
+    
+    pub fn getDebtManager() -> Address {
+        return debtManager
+    }
+    
+    pub fn getTreasury() -> Address {
+        return treasury
+    }
+    
+    pub fn getGovernance() -> Address {
+        return governance
+    }
+    
+    pub fn getPoolByToken(token: ByteVec) -> Address {
+        if (pools.contains!(token)) {
+            return pools[token]
+        }
+        return zeroAddress!()
+    }
+    
+    @using(checkExternalCaller = true, updateFields = true, assetsInContract = true)
+    pub fn registerPool(poolAddress: Address, token: ByteVec) -> (U256) {
+        // Only pool factory can register pools
+        checkCaller!(callerAddress!() == poolFactory, 1)
+        
+        let poolId = poolsCount
+        poolsCount = poolsCount + 1
+        
+        // Store pool in map with deposit
+        pools.insert!(admin, token, poolAddress)
+        
+        emit PoolAdded(poolId, poolAddress, token)
+        
+        return poolId
+    }
+    
+    @using(checkExternalCaller = true, updateFields = true)
+    pub fn updateComponent(componentType: ByteVec, newAddress: Address) -> () {
+        // Only governance can update components
+        checkCaller!(callerAddress!() == governance, 2)
+        
+        // Update the appropriate component based on type
+        if (componentType == b`poolFactory`) {
+            poolFactory = newAddress
+        } else if (componentType == b`riskManager`) {
+            riskManager = newAddress
+        } else if (componentType == b`oracleManager`) {
+            oracleManager = newAddress
+        } else if (componentType == b`debtManager`) {
+            debtManager = newAddress
+        } else if (componentType == b`treasury`) {
+            treasury = newAddress
+        } else if (componentType == b`governance`) {
+            governance = newAddress
+        } else {
+            assert!(false, 3) // Invalid component type
+        }
+        
+        emit ComponentUpdated(componentType, newAddress)
+    }
+    
+    @using(checkExternalCaller = true)
+    pub fn isPoolRegistered(token: ByteVec) -> Bool {
+        return pools.contains!(token)
+    }
+    
+    @using(checkExternalCaller = true, assetsInContract = true)
+    pub fn prepareForPools(numTokens: U256) -> () {
+        // Only admin can prepare for pools
+        checkCaller!(callerAddress!() == admin, 4)
+        
+        // Calculate deposit needed for map entries
+        let deposit = mapEntryDeposit!() * numTokens
+        
+        // Ensure we have enough ALPH for the map entries
+        assert!(selfBalance!() >= deposit, 5)
+    }
+}
+
+// Transaction script for creating a Registry
+TxScript CreateRegistry(
+    registryCode: ByteVec,
+    admin: Address,
+    governance: Address,
+    initialMapEntries: U256
+) {
+    let caller = callerAddress!()
+    
+    // Calculate required deposit for initial map entries
+    let mapDeposit = mapEntryDeposit!() * initialMapEntries
+    let contractDeposit = minimalContractDeposit!() + mapDeposit
+    
+    // Create registry contract
+    let (immFields, mutFields) = Registry.encodeFields!(
+        admin,
+        governance,
+        zeroAddress!(), // poolFactory (to be updated later)
+        zeroAddress!(), // riskManager (to be updated later)
+        zeroAddress!(), // oracleManager (to be updated later)
+        zeroAddress!(), // debtManager (to be updated later)
+        zeroAddress!(), // treasury (to be updated later)
+        0              // poolsCount
+    )
+    
+    createContract!{caller -> ALPH: contractDeposit}(
+        registryCode,
+        immFields,
+        mutFields
+    )
+}

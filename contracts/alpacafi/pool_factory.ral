@@ -1,0 +1,159 @@
+// PoolFactory.ral - Creates and manages lending pools
+
+struct PoolInfo {
+    tokenId: ByteVec,
+    poolAddress: Address,
+    tokenDecimals: U256,
+    createdAt: U256,
+    isActive: Bool
+}
+
+Contract PoolFactory (
+    registry: Address,
+    poolTemplate: ByteVec,
+    mut governance: Address,
+    mut poolCount: U256
+) { 
+    // Maps to store pool information instead of dynamic array
+    mapping[U256, PoolInfo] pools                 // Index -> PoolInfo
+    mapping[ByteVec, U256] tokenToIndex           // TokenId -> Index
+    mapping[ByteVec, Bool] tokenExists            // TokenId -> Exists flag
+    
+    // Events
+    event PoolCreated(token: ByteVec, address: Address, name: ByteVec, symbol: ByteVec)
+    event PoolDeactivated(token: ByteVec, address: Address)
+    event PoolReactivated(token: ByteVec, address: Address)
+    
+    pub fn getPoolsCount() -> U256 {
+        return poolCount
+    }
+    
+    pub fn getPoolInfo(index: U256) -> PoolInfo {
+        assert!(index < poolCount, 1) // Index out of bounds
+        return pools[index]
+    }
+    
+    pub fn findPoolByToken(token: ByteVec) -> (Bool, U256, Address) {
+        if (tokenExists.contains!(token)) {
+            let index = tokenToIndex[token]
+            let poolInfo = pools[index]
+            return true, index, poolInfo.poolAddress
+        }
+        
+        return false, 0, zeroAddress!()
+    }
+    
+    @using(checkExternalCaller = true, updateFields = true, assetsInContract = true)
+    pub fn createPool(
+        token: ByteVec,
+        tokenDecimals: U256,
+        name: ByteVec,
+        symbol: ByteVec
+    ) -> Address {
+        // Only governance can create new pools
+        checkCaller!(callerAddress!() == governance, 2)
+        
+        // Check if pool already exists for this token
+        let (exists, _, _) = findPoolByToken(token)
+        assert!(!exists, 3) // Pool already exists for this token
+        
+        // Encode pool creation parameters
+        let (encodedImmFields, encodedMutFields) = Pool.encodeFields!(
+            registry,
+            token,
+            tokenDecimals,
+            name,
+            symbol,
+            0, // sTokenSupply
+            1000000000000000000, // exchangeRate (1.0 in 1e18 precision)
+            0, // totalPoolAssets
+            0, // depositedAmount
+            0, // totalBorrowed
+            0, // reserves
+            blockTimeStamp!(), // lastUpdateTimestamp
+            true  // borrowingEnabled
+        )
+        
+        // Create pool contract
+        let poolAddress = createContract!{callerAddress!() -> ALPH : minimalContractDeposit!()}(
+            poolTemplate, 
+            encodedImmFields, 
+            encodedMutFields
+        )
+        
+        // Create pool info
+        let poolInfo = PoolInfo {
+            tokenId: token,
+            poolAddress: poolAddress,
+            tokenDecimals: tokenDecimals,
+            createdAt: blockTimeStamp!(),
+            isActive: true
+        }
+        
+        // Store pool info in maps
+        pools.insert!(governance, poolCount, poolInfo)
+        tokenToIndex.insert!(governance, token, poolCount)
+        tokenExists.insert!(governance, token, true)
+        
+        // Increment pool count
+        let currentIndex = poolCount
+        poolCount = poolCount + 1
+        
+        // Register pool in the registry
+        let registryContract = Registry(registry)
+        registryContract.registerPool(poolAddress, token)
+        
+        emit PoolCreated(token, poolAddress, name, symbol)
+        
+        return poolAddress
+    }
+    
+    @using(checkExternalCaller = true, updateFields = true)
+    pub fn setPoolStatus(tokenId: ByteVec, active: Bool) -> Bool {
+        // Only governance can update pool status
+        checkCaller!(callerAddress!() == governance, 4)
+        
+        // Find the pool
+        let (exists, index, address) = findPoolByToken(tokenId)
+        assert!(exists, 5) // Pool not found
+        
+        // Update pool status
+        let poolInfo = pools[index]
+        let updatedPool = PoolInfo {
+            tokenId: poolInfo.tokenId,
+            poolAddress: poolInfo.poolAddress,
+            tokenDecimals: poolInfo.tokenDecimals,
+            createdAt: poolInfo.createdAt,
+            isActive: active
+        }
+        
+        pools[index] = updatedPool
+        
+        if (active) {
+            emit PoolReactivated(tokenId, address)
+        } else {
+            emit PoolDeactivated(tokenId, address)
+        }
+        
+        return true
+    }
+    
+    @using(checkExternalCaller = true, updateFields = true)
+    pub fn updateGovernance(newGovernance: Address) -> () {
+        checkCaller!(callerAddress!() == governance, 6)
+        governance = newGovernance
+    }
+    
+    // Helper function to pre-allocate map entries
+    @using(checkExternalCaller = true, assetsInContract = true)
+    pub fn prepareForPools(numPools: U256) -> () {
+        checkCaller!(callerAddress!() == governance, 7)
+        
+        // Each pool requires 3 map entries (3 maps per pool)
+        let entriesNeeded = numPools * 3
+        let deposit = mapEntryDeposit!() * entriesNeeded
+        
+        // Ensure we have enough ALPH for the map entries
+        assert!(selfBalance!() >= deposit, 8)
+    }
+}

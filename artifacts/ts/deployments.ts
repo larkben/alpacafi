@@ -18,8 +18,6 @@ import {
   AuctionInstance,
   AuctionFactory,
   AuctionFactoryInstance,
-  TokenTest,
-  TokenTestInstance,
   Debt,
   DebtInstance,
   Pool,
@@ -36,7 +34,6 @@ export type Deployments = {
     LoanFactory?: DeployContractExecutionResult<LoanFactoryInstance>;
     Auction?: DeployContractExecutionResult<AuctionInstance>;
     AuctionFactory?: DeployContractExecutionResult<AuctionFactoryInstance>;
-    TokenTest?: DeployContractExecutionResult<TokenTestInstance>;
     Debt?: DeployContractExecutionResult<DebtInstance>;
     Pool?: DeployContractExecutionResult<PoolInstance>;
   };
@@ -87,15 +84,6 @@ function toDeployments(json: any): Deployments {
             ...json.contracts["AuctionFactory"],
             contractInstance: AuctionFactory.at(
               json.contracts["AuctionFactory"].contractInstance.address
-            ),
-          },
-    TokenTest:
-      json.contracts["TokenTest"] === undefined
-        ? undefined
-        : {
-            ...json.contracts["TokenTest"],
-            contractInstance: TokenTest.at(
-              json.contracts["TokenTest"].contractInstance.address
             ),
           },
     Debt:

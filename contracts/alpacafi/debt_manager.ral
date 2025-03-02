@@ -1,0 +1,327 @@
+// DebtManager.ral - Manages borrowing, collateral, and debt positions
+
+struct DebtPosition {
+    borrower: Address,
+    contractId: ByteVec,
+    active: Bool,
+    createdAt: U256,
+    lastUpdatedAt: U256
+}
+
+Contract DebtManager (
+    registry: Address,
+    debtTemplate: ByteVec,
+    mut dynamicArray: ByteVec,
+    mut governance: Address,
+    mut debtCount: U256
+) { 
+    // Debt ID => Debt Position
+    mapping[U256, DebtPosition] debtPositions
+    
+    // Borrower => Array of Debt IDs
+    mapping[Address, ByteVec] borrowerDebts
+    
+    // Events
+    event DebtCreated(debtId: U256, borrower: Address, contractId: ByteVec)
+    event DebtUpdated(debtId: U256, action: ByteVec)
+    event DebtRepaid(debtId: U256, borrower: Address)
+    event DebtLiquidated(debtId: U256, borrower: Address, liquidator: Address)
+    
+    pub fn getDebtPosition(debtId: U256) -> DebtPosition {
+        assert!(debtPositions.contains!(debtId), 1) // Debt position doesn't exist
+
+        return debtPositions[debtId]
+    }
+    
+    pub fn getBorrowerDebts(borrower: Address) -> (ByteVec) {
+        if (borrowerDebts.contains!(borrower)) {
+            return borrowerDebts[borrower]
+        }
+        return b`` // null
+    }
+    
+    pub fn checkHealthFactor(debtId: U256) -> (U256, Bool) {
+        let debtPosition = getDebtPosition(debtId)
+        assert!(debtPosition.active, 2) // Debt position not active
+        
+        // assignment
+        let debt = MultiDebt(subContractId!(debtPosition.contractId))
+        let reg = Registry(addressToContractId!(registry))
+        let riskManager = RiskManager(addressToContractId!(reg.getRiskManager()))
+
+        if ()
+        let oracleManager = OracleManager(addressToContractId!(reg.getOracleManager()))
+        
+        // positions
+        let borrowPositions = debt.getBorrowPositions()
+        let collateralPositions = debt.getCollateralPositions()
+        
+        // return health factor
+        return riskManager.checkHealthFactor(borrowPositions, collateralPositions, oracleManager)
+    }
+    
+    @using(checkExternalCaller = false, updateFields = true)
+    pub fn createDebtPosition(borrower: Address) -> (U256, ByteVec) {
+        // Create unique debt ID
+        let debtId = debtCount
+        debtCount = debtCount + 1
+        
+        // Create the debt contract
+        let (encodeImmutableFields, encodeMutableFields) = MultiDebt.encodeFields!(
+            borrower,
+            blockTimeStamp!(),
+            debtId,
+            selfAddress!()
+        )
+        
+        let value = encodeToByteVec!(debtId, borrower, blockTimeStamp!())
+        
+        let debtContractId = copyCreateSubContract!{callerAddress!() -> ALPH: minimalContractDeposit!() * 2}(
+            value,
+            debtTemplate,
+            encodeImmutableFields,
+            encodeMutableFields
+        )
+        
+        // Store debt position
+        let debtPosition = DebtPosition {
+            borrower: borrower,
+            contractId: value,
+            active: true,
+            createdAt: blockTimeStamp!(),
+            lastUpdatedAt: blockTimeStamp!()
+        }
+        
+        debtPositions.insert!(borrower, debtId, debtPosition)
+        
+        // Update borrower's debts
+        let mut currentDebts = b`` // null default
+        
+        if (borrowerDebts.contains!(borrower) == false) {
+            // insert since debt doesnt exist
+            borrowerDebts.insert!(borrower, borrower, b``)
+        }
+        
+        // push to array (u256)
+        let array = DynamicArrayForInt(dynamicArray).push(borrowerDebts[borrower], debtId)
+        
+        borrowerDebts[borrower] = array
+        
+        emit DebtCreated(debtId, borrower, value)
+        
+        return debtId, value
+    }
+    
+    @using(checkExternalCaller = false, updateFields = true)
+    pub fn borrow(
+        debtId: U256, 
+        token: ByteVec, 
+        amount: U256, 
+        interestRate: U256
+    ) -> Bool {
+        let debtPosition = getDebtPosition(debtId)
+        assert!(debtPosition.active, 3) // Debt position not active
+        
+        let registry = Registry(registry)
+        let riskManager = RiskManager(registry.getRiskManager())
+        let oracleManager = OracleManager(registry.getOracleManager())
+        
+        // Get the pool address for this token
+        let pool = registry.getPoolByToken(token)
+        assert!(pool != zeroAddress!(), 4) // Pool not found for token
+        
+        // Get the debt contract
+        let debt = MultiDebt(subContractId!(debtPosition.contractId))
+        
+        // Add the borrow position
+        debt.addBorrow(token, amount, interestRate, pool)
+        
+        // Check health factor after borrowing
+        let (healthFactor, isHealthy) = checkHealthFactor(debtId)
+        assert!(isHealthy, 5) // Borrowing would make position unhealthy
+        
+        // Update debt position timestamp
+        let updatedPosition = DebtPosition {
+            borrower: debtPosition.borrower,
+            contractId: debtPosition.contractId,
+            active: debtPosition.active,
+            createdAt: debtPosition.createdAt,
+            lastUpdatedAt: blockTimeStamp!()
+        }
+        
+        debtPositions[debtId] = updatedPosition
+        
+        emit DebtUpdated(debtId, b`borrow`)
+        
+        return true
+    }
+    
+    @using(checkExternalCaller = false, updateFields = true)
+    pub fn addCollateral(
+        debtId: U256, 
+        token: ByteVec, 
+        amount: U256
+    ) -> Bool {
+        let debtPosition = getDebtPosition(debtId)
+        assert!(debtPosition.active, 6) // Debt position not active
+        
+        let registry = Registry(registry)
+        
+        // Get the pool address for this token
+        let pool = registry.getPoolByToken(token)
+        assert!(pool != zeroAddress!(), 7) // Pool not found for token
+        
+        // Get the debt contract
+        let debt = MultiDebt(subContractId!(debtPosition.contractId))
+        
+        // Add the collateral position
+        debt.addCollateral(token, amount, pool)
+        
+        // Update debt position timestamp
+        let updatedPosition = DebtPosition {
+            borrower: debtPosition.borrower,
+            contractId: debtPosition.contractId,
+            active: debtPosition.active,
+            createdAt: debtPosition.createdAt,
+            lastUpdatedAt: blockTimeStamp!()
+        }
+
+        debtPositions[debtId] = updatedPosition
+        
+        emit DebtUpdated(debtId, b`addCollateral`)
+        
+        return true
+    }
+    
+    @using(checkExternalCaller = false, updateFields = true)
+    pub fn repayBorrow(
+        debtId: U256, 
+        token: ByteVec, 
+        amount: U256
+    ) -> U256 {
+        let debtPosition = getDebtPosition(debtId)
+        assert!(debtPosition.active, 8) // Debt position not active
+        
+        // Get the debt contract
+        let debt = MultiDebt(subContractId!(debtPosition.contractId))
+        
+        // Repay the borrow
+        let amountRepaid = debt.repayBorrow(token, amount)
+        
+        // Update debt position timestamp
+        let updatedPosition = DebtPosition {
+            borrower: debtPosition.borrower,
+            contractId: debtPosition.contractId,
+            active: debtPosition.active,
+            createdAt: debtPosition.createdAt,
+            lastUpdatedAt: blockTimeStamp!()
+        }
+        
+        //debtPositions.put(debtId, updatedPosition)
+
+        debtPositions[debtId] = updatedPosition
+        
+        emit DebtUpdated(debtId, b`repayBorrow`)
+        
+        return amountRepaid
+    }
+    
+    @using(checkExternalCaller = false, updateFields = true)
+    pub fn removeCollateral(
+        debtId: U256, 
+        token: ByteVec, 
+        amount: U256
+    ) -> Bool {
+        let debtPosition = getDebtPosition(debtId)
+        assert!(debtPosition.active, 9) // Debt position not active
+        
+        // Get the debt contract
+        let debt = MultiDebt(subContractId!(debtPosition.contractId))
+        
+        // Remove the collateral
+        let success = debt.removeCollateral(token, amount)
+        
+        if (success) {
+            // Check health factor after removing collateral
+            let (healthFactor, isHealthy) = checkHealthFactor(debtId)
+            assert!(isHealthy, 10) // Removing collateral would make position unhealthy
+            
+            // Update debt position timestamp
+            let updatedPosition = DebtPosition {
+                borrower: debtPosition.borrower,
+                contractId: debtPosition.contractId,
+                active: debtPosition.active,
+                createdAt: debtPosition.createdAt,
+                lastUpdatedAt: blockTimeStamp!()
+            }
+
+            debtPositions[debtId] = updatedPosition
+            
+            emit DebtUpdated(debtId, b`removeCollateral`)
+        }
+        
+        return success
+    }
+    
+    @using(checkExternalCaller = false, updateFields = true)
+    pub fn closeDebtPosition(debtId: U256) -> Bool {
+        let debtPosition = getDebtPosition(debtId)
+        assert!(debtPosition.active, 11) // Debt position not active
+        
+        let debt = MultiDebt(subContractId!(debtPosition.contractId))
+        
+        // Check if all borrows have been repaid
+        let borrowPositions = debt.getBorrowPositions()
+        assert!(borrowPositions.size() == 0, 12) // Not all borrows have been repaid
+        
+        // Mark debt position as inactive
+        let updatedPosition = DebtPosition {
+            borrower: debtPosition.borrower,
+            contractId: debtPosition.contractId,
+            active: false,
+            createdAt: debtPosition.createdAt,
+            lastUpdatedAt: blockTimeStamp!()
+        }
+        
+        //debtPositions.put(debtId, updatedPosition)
+
+        debtPositions[debtId] = updatedPosition
+        
+        emit DebtRepaid(debtId, debtPosition.borrower)
+        
+        return true
+    }
+    
+    @using(checkExternalCaller = false, updateFields = true)
+    pub fn liquidatePosition(debtId: U256, liquidator: Address) -> Bool {
+        let debtPosition = getDebtPosition(debtId)
+        assert!(debtPosition.active, 13) // Debt position not active
+        
+        // Check if position is unhealthy
+        let (healthFactor, isHealthy) = checkHealthFactor(debtId)
+        assert!(!isHealthy, 14) // Position is not eligible for liquidation
+        
+        // Mark debt position as inactive (liquidated)
+        let updatedPosition = DebtPosition {
+            borrower: debtPosition.borrower,
+            contractId: debtPosition.contractId,
+            active: false,
+            createdAt: debtPosition.createdAt,
+            lastUpdatedAt: blockTimeStamp!()
+        }
+        
+        //debtPositions.put(debtId, updatedPosition)
+
+        debtPositions[debtId] = updatedPosition
+        
+        emit DebtLiquidated(debtId, debtPosition.borrower, liquidator)
+        
+        return true
+    }
+    
+    @using(checkExternalCaller = true, updateFields = true)
+    pub fn updateGovernance(newGovernance: Address) -> () {
+        checkCaller!(callerAddress!() == governance, 15)
+        governance = newGovernance
+    }
+}

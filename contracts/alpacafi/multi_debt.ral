@@ -1,0 +1,373 @@
+// MultiDebt.ral
+
+// Constants within contract scope
+const SECONDS_PER_YEAR = 31556926000 // Accurate seconds in a year
+const BASIS_POINTS = 10000        // 100% in basis points
+
+struct BorrowPosition {
+    token: ByteVec,
+    amount: U256,
+    interestRate: U256,
+    lastInterestUpdate: U256,
+    poolAddress: Address
+}
+
+struct CollateralPosition {
+    token: ByteVec,
+    amount: U256,
+    poolAddress: Address
+}
+
+Contract MultiDebt (
+    borrower: Address,
+    createdAt: U256,
+    debtId: U256,
+    parentContract: Address,
+    mut borrowTokenCount: U256,
+    mut collateralTokenCount: U256
+) {
+    // Maps with proper RALPH syntax
+    mapping[ByteVec, Bool] borrowTokenExists
+    mapping[ByteVec, Bool] collateralTokenExists
+    mapping[U256, ByteVec] borrowTokenByIndex
+    mapping[U256, ByteVec] collateralTokenByIndex
+    mapping[ByteVec, BorrowPosition] borrowPositions
+    mapping[ByteVec, CollateralPosition] collateralPositions
+    
+    // Events
+    event BorrowAdded(token: ByteVec, amount: U256, interestRate: U256)
+    event CollateralAdded(token: ByteVec, amount: U256)
+    event InterestAccrued(token: ByteVec, interestAmount: U256)
+    
+    pub fn getBorrower() -> Address {
+        return borrower
+    }
+    
+    pub fn getParentContract() -> Address {
+        return parentContract
+    }
+    
+    pub fn getDebtId() -> U256 {
+        return debtId
+    }
+    
+    pub fn getBorrowPositionsCount() -> U256 {
+        return borrowTokenCount
+    }
+    
+    pub fn getCollateralPositionsCount() -> U256 {
+        return collateralTokenCount
+    }
+    
+    pub fn getBorrowTokenAtIndex(index: U256) -> ByteVec {
+        assert!(index < borrowTokenCount, 0)
+        return borrowTokenByIndex[index]
+    }
+    
+    pub fn getCollateralTokenAtIndex(index: U256) -> ByteVec {
+        assert!(index < collateralTokenCount, 0)
+        return collateralTokenByIndex[index]
+    }
+    
+    pub fn getBorrowPosition(token: ByteVec) -> (Bool, BorrowPosition) {
+        if (borrowTokenExists.contains!(token)) {
+            let position = borrowPositions[token]
+            return true, position
+        }
+
+        let emptyPosition = BorrowPosition {
+            token: token,
+            amount: 0,
+            interestRate: 0,
+            lastInterestUpdate: 0,
+            poolAddress: zeroAddress!()
+        }
+        
+        return false, emptyPosition
+    }
+    
+    pub fn getCollateralPosition(token: ByteVec) -> (Bool, CollateralPosition) {
+        if (collateralTokenExists.contains!(token)) {
+            let position = collateralPositions[token]
+            return true, position
+        }
+
+        let emptyPosition = CollateralPosition {
+            token: token,
+            amount: 0,
+            poolAddress: zeroAddress!()
+        }
+        
+        return false, emptyPosition
+    }
+    
+    pub fn hasDebt(token: ByteVec) -> Bool {
+        return borrowTokenExists.contains!(token)
+    }
+    
+    pub fn hasCollateral(token: ByteVec) -> Bool {
+        return collateralTokenExists.contains!(token)
+    }
+    
+    pub fn calculateInterest(principal: U256, rate: U256, timeElapsed: U256) -> U256 {
+        return (principal * rate * timeElapsed) / (SECONDS_PER_YEAR * BASIS_POINTS)
+    }
+    
+    pub fn calculateRepayment(token: ByteVec) -> U256 {
+        if (!borrowTokenExists.contains!(token)) {
+            return 0
+        }
+        
+        let position = borrowPositions[token]
+        let timeElapsed = blockTimeStamp!() - position.lastInterestUpdate
+        let interest = calculateInterest(position.amount, position.interestRate, timeElapsed)
+        
+        return position.amount + interest
+    }
+    
+    @using(checkExternalCaller = true, updateFields = true, assetsInContract = true)
+    pub fn addBorrow(token: ByteVec, amount: U256, interestRate: U256, pool: Address) -> () {
+        checkCaller!(callerAddress!() == parentContract, 1)
+        
+        if (borrowTokenExists.contains!(token)) {
+            // Update existing position
+            let position = borrowPositions[token]
+            let timeElapsed = blockTimeStamp!() - position.lastInterestUpdate
+            let interest = calculateInterest(position.amount, position.interestRate, timeElapsed)
+            
+            // Update position with accumulated interest
+            let updatedPosition = BorrowPosition {
+                token: token,
+                amount: position.amount + interest + amount,
+                interestRate: interestRate,
+                lastInterestUpdate: blockTimeStamp!(),
+                poolAddress: pool
+            }
+            
+            borrowPositions[token] = updatedPosition
+            emit InterestAccrued(token, interest)
+            emit BorrowAdded(token, amount, interestRate)
+        } else {
+            // Add new position
+            let newPosition = BorrowPosition {
+                token: token,
+                amount: amount,
+                interestRate: interestRate,
+                lastInterestUpdate: blockTimeStamp!(),
+                poolAddress: pool
+            }
+            
+            // Create map entries with deposits
+            borrowTokenExists.insert!(parentContract, token, true)
+            borrowPositions.insert!(parentContract, token, newPosition)
+            borrowTokenByIndex.insert!(parentContract, borrowTokenCount, token)
+            
+            borrowTokenCount = borrowTokenCount + 1
+            emit BorrowAdded(token, amount, interestRate)
+        }
+    }
+    
+    @using(checkExternalCaller = true, updateFields = true, assetsInContract = true)
+    pub fn repayBorrow(token: ByteVec, amount: U256) -> U256 {
+        checkCaller!(callerAddress!() == parentContract, 1)
+        
+        if (!borrowTokenExists.contains!(token)) {
+            return 0
+        }
+        
+        let position = borrowPositions[token]
+        let timeElapsed = blockTimeStamp!() - position.lastInterestUpdate
+        let interest = calculateInterest(position.amount, position.interestRate, timeElapsed)
+        let totalOwed = position.amount + interest
+        
+        if (amount >= totalOwed) {
+            // Full repayment - remove the position
+            let indexToRemove = findBorrowTokenIndex(token)
+            
+            if (indexToRemove < borrowTokenCount) {
+                // Move last token to this index if it's not the last one
+                if (indexToRemove < borrowTokenCount - 1) {
+                    let lastToken = borrowTokenByIndex[borrowTokenCount - 1]
+                    borrowTokenByIndex[indexToRemove] = lastToken
+                }
+                
+                // Remove the last index entry if we moved it
+                if (borrowTokenCount > 1) {
+                    borrowTokenByIndex.remove!(parentContract, borrowTokenCount - 1)
+                }
+                
+                borrowTokenCount = borrowTokenCount - 1
+            }
+            
+            // Remove map entries and return deposits to parent contract
+            borrowPositions.remove!(parentContract, token)
+            borrowTokenExists.remove!(parentContract, token)
+            
+            return totalOwed
+        } else {
+            // Partial repayment
+            let updatedPosition = BorrowPosition {
+                token: token,
+                amount: totalOwed - amount,
+                interestRate: position.interestRate,
+                lastInterestUpdate: blockTimeStamp!(),
+                poolAddress: position.poolAddress
+            }
+            
+            borrowPositions[token] = updatedPosition
+            return amount
+        }
+    }
+    
+    fn findBorrowTokenIndex(token: ByteVec) -> U256 {
+        let mut foundIndex = borrowTokenCount
+        let mut i = 0
+        
+        while (i < borrowTokenCount && foundIndex == borrowTokenCount) {
+            if (borrowTokenByIndex[i] == token) {
+                foundIndex = i
+            }
+            i = i + 1
+        }
+        
+        return foundIndex
+    }
+    
+    fn findCollateralTokenIndex(token: ByteVec) -> U256 {
+        let mut foundIndex = collateralTokenCount
+        let mut i = 0
+        
+        while (i < collateralTokenCount && foundIndex == collateralTokenCount) {
+            if (collateralTokenByIndex[i] == token) {
+                foundIndex = i
+            }
+            i = i + 1
+        }
+        
+        return foundIndex
+    }
+    
+    @using(checkExternalCaller = true, updateFields = true, assetsInContract = true)
+    pub fn addCollateral(token: ByteVec, amount: U256, pool: Address) -> () {
+        checkCaller!(callerAddress!() == parentContract, 1)
+        
+        if (collateralTokenExists.contains!(token)) {
+            // Update existing position
+            let position = collateralPositions[token]
+            
+            let updatedPosition = CollateralPosition {
+                token: token,
+                amount: position.amount + amount,
+                poolAddress: pool
+            }
+            
+            collateralPositions[token] = updatedPosition
+        } else {
+            // Add new position
+            let newPosition = CollateralPosition {
+                token: token,
+                amount: amount,
+                poolAddress: pool
+            }
+            
+            // Create map entries with deposits
+            collateralTokenExists.insert!(parentContract, token, true)
+            collateralPositions.insert!(parentContract, token, newPosition)
+            collateralTokenByIndex.insert!(parentContract, collateralTokenCount, token)
+            
+            collateralTokenCount = collateralTokenCount + 1
+        }
+        
+        emit CollateralAdded(token, amount)
+    }
+    
+    @using(checkExternalCaller = true, updateFields = true, assetsInContract = true)
+    pub fn removeCollateral(token: ByteVec, amount: U256) -> Bool {
+        checkCaller!(callerAddress!() == parentContract, 1)
+        
+        if (!collateralTokenExists.contains!(token)) {
+            return false
+        }
+        
+        let position = collateralPositions[token]
+        
+        if (amount > position.amount) {
+            return false
+        }
+        
+        if (amount == position.amount) {
+            // Remove the entire position
+            let indexToRemove = findCollateralTokenIndex(token)
+            
+            if (indexToRemove < collateralTokenCount) {
+                // Move last token to this index if it's not the last one
+                if (indexToRemove < collateralTokenCount - 1) {
+                    let lastToken = collateralTokenByIndex[collateralTokenCount - 1]
+                    collateralTokenByIndex[indexToRemove] = lastToken
+                }
+                
+                // Remove the last index entry if we moved it
+                if (collateralTokenCount > 1) {
+                    collateralTokenByIndex.remove!(parentContract, collateralTokenCount - 1)
+                }
+                
+                collateralTokenCount = collateralTokenCount - 1
+            }
+            
+            // Remove map entries and return deposits to parent contract
+            collateralPositions.remove!(parentContract, token)
+            collateralTokenExists.remove!(parentContract, token)
+        } else {
+            // Reduce the collateral amount
+            let updatedPosition = CollateralPosition {
+                token: token,
+                amount: position.amount - amount,
+                poolAddress: position.poolAddress
+            }
+            
+            collateralPositions[token] = updatedPosition
+        }
+        
+        return true
+    }
+    
+    @using(checkExternalCaller = true, assetsInContract = true)
+    pub fn destroyDebt(caller: Address) -> () {
+        checkCaller!(callerAddress!() == parentContract, 1)
+        
+        // Verify all debts are repaid
+        assert!(borrowTokenCount == 0, 2)
+        
+        destroySelf!(caller)
+    }
+}
+
+// Transaction script example for creating a MultiDebt contract
+TxScript CreateMultiDebt(
+    debtCode: ByteVec,
+    borrower: Address,
+    debtId: U256,
+    parentContract: Address
+) {
+    let caller = callerAddress!()
+    
+    // Calculate needed deposit for initial map entries
+    let initialMapEntryCount = 6 // For our map types
+    let requiredDeposit = minimalContractDeposit!() + (mapEntryDeposit!() * initialMapEntryCount)
+    
+    // Create the debt contract with enough ALPH for map entries
+    let (immFields, mutFields) = MultiDebt.encodeFields!(
+        borrower,
+        blockTimeStamp!(),
+        debtId,
+        parentContract,
+        0, // borrowTokenCount
+        0  // collateralTokenCount
+    )
+    
+    createContract!{caller -> ALPH: requiredDeposit}(
+        debtCode,
+        immFields,
+        mutFields
+    )
+}
