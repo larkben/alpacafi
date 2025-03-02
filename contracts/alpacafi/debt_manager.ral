@@ -44,20 +44,11 @@ Contract DebtManager (
         let debtPosition = getDebtPosition(debtId)
         assert!(debtPosition.active, 2) // Debt position not active
         
-        // assignment
-        let debt = MultiDebt(subContractId!(debtPosition.contractId))
         let reg = Registry(addressToContractId!(registry))
         let riskManager = RiskManager(addressToContractId!(reg.getRiskManager()))
-
-        if ()
-        let oracleManager = OracleManager(addressToContractId!(reg.getOracleManager()))
-        
-        // positions
-        let borrowPositions = debt.getBorrowPositions()
-        let collateralPositions = debt.getCollateralPositions()
         
         // return health factor
-        return riskManager.checkHealthFactor(borrowPositions, collateralPositions, oracleManager)
+        return riskManager.checkHealthFactor(debtId)
     }
     
     @using(checkExternalCaller = false, updateFields = true)
@@ -124,7 +115,6 @@ Contract DebtManager (
         
         let registry = Registry(registry)
         let riskManager = RiskManager(registry.getRiskManager())
-        let oracleManager = OracleManager(registry.getOracleManager())
         
         // Get the pool address for this token
         let pool = registry.getPoolByToken(token)

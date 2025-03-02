@@ -4,9 +4,6 @@ Contract Registry (
     mut governance: Address,
     mut poolFactory: Address,
     mut riskManager: Address,
-    // oracles
-    mut oracleManager: Address,
-    mut oracleAlpacaFi: Address,
     // debt / treasury / pools
     mut debtManager: Address,
     mut treasury: Address,
