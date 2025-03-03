@@ -1,6 +1,18 @@
-// ImprovedPool.ral - Enhanced lending pool with dynamic parameters
+// Example fungible token interface
 
-Contract ImprovedPool (
+// ifungible token interface
+Interface IFungibleToken {
+    pub fn getSymbol() -> ByteVec
+    pub fn getName() -> ByteVec
+    pub fn getDecimals() -> U256
+    pub fn getTotalSupply() -> U256
+}
+
+// constants
+const SECONDS_PER_YEAR = 31536000000
+const BASIS_POINTS = 10000
+
+Contract Pool (
     registry: Address,
     poolToken: ByteVec,
     poolDecimals: U256,
@@ -73,17 +85,9 @@ Contract ImprovedPool (
     }
     
     pub fn getInterestRate() -> U256 {
-        // Get registry components
-        let reg = Registry(addressToContractId!(registry))
-        let riskManager = RiskManager(addressToContractId!(reg.getRiskManager()))
-        
-        // Get token risk parameters
-        let tokenParams = riskManager.getTokenRiskParams(poolToken)
-        
-        // Get the utilization rate
+        // Base rate calculation based on utilization
         let utilization = getUtilizationRate()
         
-        // Use dynamic interest rate model based on utilization
         if (utilization < 5000) { // < 50%
             return 200 // 2%
         } else if (utilization < 8000) { // 50% - 80%
@@ -97,8 +101,8 @@ Contract ImprovedPool (
     
     @using(checkExternalCaller = false, updateFields = true)
     pub fn updateState() -> () {
-        let reg = Registry(addressToContractId!(registry))
-        let riskManager = RiskManager(addressToContractId!(reg.getRiskManager()))
+        let registry = Registry(registry)
+        let riskManager = RiskManager(registry.getRiskManager())
         
         // Calculate time elapsed since last update
         let currentTime = blockTimeStamp!()
@@ -150,8 +154,8 @@ Contract ImprovedPool (
         updateState()
         
         // Check if supply cap is reached
-        let reg = Registry(addressToContractId!(registry))
-        let riskManager = RiskManager(addressToContractId!(reg.getRiskManager()))
+        let registry = Registry(registry)
+        let riskManager = RiskManager(registry.getRiskManager())
         let tokenParams = riskManager.getTokenRiskParams(poolToken)
         
         assert!(depositedAmount + amount <= tokenParams.supplyCap, ErrorCodes.SupplyCapReached)
@@ -166,7 +170,7 @@ Contract ImprovedPool (
         sTokenSupply = sTokenSupply + totalSTokens
         
         transferToken!(selfAddress!(), caller, ALPH, dustAmount!())
-        transferToken!(selfAddress!(), caller, selfTokenId!(), totalSTokens)
+        transferToken!(selfAddress!(), caller, selfContractId!(), totalSTokens)
         
         depositedAmount = depositedAmount + amount
         totalPoolAssets = totalPoolAssets + amount
@@ -186,7 +190,7 @@ Contract ImprovedPool (
         updateState()
         
         transferToken!(caller, selfAddress!(), ALPH, dustAmount!() * 3)
-        transferToken!(caller, selfAddress!(), selfTokenId!(), sTokenAmount)
+        transferToken!(caller, selfAddress!(), selfContractId!(), sTokenAmount)
         
         let precisionFactor = 1000000000000000000 // 1e18
         let assetsToReceive = (sTokenAmount * exchangeRate) / precisionFactor
@@ -224,9 +228,9 @@ Contract ImprovedPool (
         assert!(totalPoolAssets - totalBorrowed >= amount, ErrorCodes.InsufficientLiquidity)
         
         // Check if borrow cap is reached
-        let reg = Registry(addressToContractId!(registry))
-        let riskManager = RiskManager(addressToContractId!(reg.getRiskManager()))
-        let debtManager = DebtManager(addressToContractId!(reg.getDebtManager()))
+        let registry = Registry(registry)
+        let riskManager = RiskManager(registry.getRiskManager())
+        let debtManager = DebtManager(registry.getDebtManager())
         
         let tokenParams = riskManager.getTokenRiskParams(poolToken)
         assert!(totalBorrowed + amount <= tokenParams.borrowCap, ErrorCodes.BorrowCapReached)
@@ -260,8 +264,8 @@ Contract ImprovedPool (
         updateState()
         
         // Get DebtManager
-        let reg = Registry(addressToContractId!(registry))
-        let debtManager = DebtManager(addressToContractId!(reg.getDebtManager()))
+        let registry = Registry(registry)
+        let debtManager = DebtManager(registry.getDebtManager())
         
         // Get debt position
         let debtPosition = debtManager.getDebtPosition(debtId)
@@ -293,41 +297,5 @@ Contract ImprovedPool (
         return amountRepaid
     }
     
-    @using(checkExternalCaller = true, assetsInContract = true, updateFields = true)
-    pub fn collectReserves(amount: U256) -> Bool {
-        let reg = Registry(addressToContractId!(registry))
-        let treasury = reg.getTreasury()
-        
-        checkCaller!(callerAddress!() == treasury, ErrorCodes.Unauthorized)
-        
-        assert!(amount <= reserves, ErrorCodes.InsufficientLiquidity)
-        
-        reserves = reserves - amount
-        
-        transferToken!(selfAddress!(), treasury, poolToken, amount)
-        
-        emit ReservesCollected(amount, treasury)
-        
-        return true
-    }
-    
-    @using(checkExternalCaller = true, updateFields = true)
-    pub fn setBorrowingEnabled(newBorrowingEnabled: Bool) -> Bool {
-        let reg = Registry(addressToContractId!(registry))
-        let governance = reg.getGovernance()
-        
-        checkCaller!(callerAddress!() == governance, ErrorCodes.Unauthorized)
-        
-        borrowingEnabled = newBorrowingEnabled
-        
-        return true
-    }
-    
-    // Get current token price from oracle via risk manager
-    pub fn getTokenPrice() -> U256 {
-        let reg = Registry(registry)
-        let riskManager = RiskManager(reg.getRiskManager())
-        
-        return riskManager.getTokenPrice(poolToken)
-    }
+    // collect reserves function
 }
