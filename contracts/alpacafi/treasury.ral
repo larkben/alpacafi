@@ -1,11 +1,36 @@
 // Treasury
 
+struct ProtocolToken {
+    token: ByteVec,
+    decimals: U256,
+    mut oracle: Bool,
+    mut active: Bool
+}
+
 Contract Treasury (
     admin: Address,
-    feeTemplate: ByteVec
+    feeTemplate: ByteVec,
+    poolFactory: Address,
+    oracle: IDIAOracle,
+    customOracle: ByteVec
 ) { 
-    // add fee contract
-    pub fn addTreasuryToken() -> () {
+    mapping [ByteVec, ProtocolToken] protocolTokens
+    
+    pub fn addProtocolToken() -> () {
+        // check caller
 
+        // define mapping
+
+        // create pool from factory
     }
+
+    pub fn updateAdmin() -> () {
+        // update admin
+    }
+
+    pub fn getProtocolTokenData() -> ProtocolToken {
+        // get protocol data
+    }
+
+    // due to this being the treasury contract this will route to the debt_manager contract
 }
