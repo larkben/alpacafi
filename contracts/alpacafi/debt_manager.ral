@@ -1,7 +1,0 @@
-Contract DebtManager (
-    treasury: Address,
-    debtPositionTemplate: ByteVec,
-    debtTemplate: ByteVec           // individual contract for specific asset
-) {
-
-}
