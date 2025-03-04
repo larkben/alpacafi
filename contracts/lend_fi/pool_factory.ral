@@ -58,7 +58,7 @@ Contract PoolFactory (
 
         let caller = callerAddress!()
 
-        let (token, _) = pool.getPoolTokens()
+        let token = pool.getPoolToken()
 
         pool.deposit{caller -> token: amount}(caller, amount)
 
@@ -78,7 +78,7 @@ Contract PoolFactory (
 
         let caller = callerAddress!()
 
-        let (token, _) = pool.getPoolTokens()
+        let token = pool.getSPoolToken()
 
         //! this will need to be edited  
         pool.withdraw{callerAddress!() -> token: amount}(caller, amount)
@@ -92,25 +92,6 @@ Contract PoolFactory (
         )
     }
 
-    // Provide collateral to borrow against -> collateral account
-    @using(checkExternalCaller = false, preapprovedAssets = true, assetsInContract = false, updateFields = false)
-    pub fn depositCollateral(pair: ByteVec, amount: U256) -> () {
-        let pool = Pool(subContractId!(pair))
-
-        let caller = callerAddress!()
-
-        let (_, collateral) = pool.getPoolTokens()
-
-        pool.depositCollateral{caller -> collateral: amount}(caller, amount)
-
-        emit CollateralAdded(
-            caller, 
-            pair, 
-            collateral, 
-            amount
-        )
-    }
-
     // borrow -> borrow (create loan + mapping)
     @using(checkExternalCaller = false, preapprovedAssets = true, assetsInContract = enforced, updateFields = true)
     pub fn borrow(pair: ByteVec, amount: U256) -> () {
@@ -120,7 +101,10 @@ Contract PoolFactory (
         let time = blockTimeStamp!()
 
         // get token
-        let (token, collateral) = pool.getPoolTokens()
+        let collateral = pool.getPoolToken()
+
+        // calculate collateral required for loan
+        // .. code
 
         pool.borrow{callerAddress!() -> collateral: amount}(caller, amount, encodeToByteVec!(caller, time))
 
@@ -128,7 +112,7 @@ Contract PoolFactory (
             caller,
             pair,
             encodeToByteVec!(caller, time),
-            token,
+            collateral,
             amount
         )
     }
@@ -140,9 +124,10 @@ Contract PoolFactory (
 
         let caller = callerAddress!()
 
-        let (token, _) = pool.getPoolTokens()
+        let token = pool.getPoolToken()
 
         // calculate repayment
+        // .. code
 
         let remaining = pool.repay{caller -> token: amount}(caller, path, amount)
 
