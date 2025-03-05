@@ -104,8 +104,6 @@ const CustomTimeUnitSelect = ({ value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef(null)
   const timeUnits = [
-    { value: 'minutes', label: 'Minutes' },
-    { value: 'hours', label: 'Hours' },
     { value: 'days', label: 'Days' },
     { value: 'months', label: 'Months' }
   ]

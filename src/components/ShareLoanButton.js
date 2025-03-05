@@ -377,7 +377,7 @@ const ShareLoanButton = ({
           
           <div className="grid grid-cols-3 gap-6 mb-8">
             <div className="p-6 bg-gray-800/50 rounded-xl border border-gray-700/50">
-              <span className="text-lg text-gray-400 block mb-3">Interest Rate</span>
+              <span className="text-lg text-gray-400 block mb-3">APR</span>
               <span className="font-medium text-3xl text-green-400">{(loanData.interest / 100).toFixed(2)}%</span>
             </div>
             

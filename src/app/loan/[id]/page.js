@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Navbar } from '../../../components/navbar'
 import { Footer } from '../../../components/footer'
 import { motion } from 'framer-motion'
@@ -18,7 +19,9 @@ export default function LoanDetailPage() {
   const [loanDetails, setLoanDetails] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [redirectCountdown, setRedirectCountdown] = useState(10)
   const params = useParams()
+  const router = useRouter()
   const backendUrl = getBackendUrl()
   
   const [ansProfiles, setAnsProfiles] = useState({})
@@ -40,6 +43,7 @@ export default function LoanDetailPage() {
 
   const fetchLoanDetails = async () => {
     setLoading(true)
+    setError(null)
     try {
       const response = await fetch(`${backendUrl}/api/loan-by-id/${params.id}`)
       if (!response.ok) {
@@ -54,7 +58,7 @@ export default function LoanDetailPage() {
       setLoading(false)
     } catch (err) {
       console.error('Error fetching loan details:', err)
-      setError(err.message)
+      setError("This loan has never existed or no longer exists")
       setLoading(false)
     }
   }
@@ -365,6 +369,23 @@ export default function LoanDetailPage() {
     }
   }, [params.id, backendUrl])
 
+  useEffect(() => {
+    if (error) {
+      const timer = setInterval(() => {
+        setRedirectCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            router.push('/loan');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      return () => clearInterval(timer);
+    }
+  }, [error, router]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-900 to-black">
@@ -381,15 +402,45 @@ export default function LoanDetailPage() {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-900 to-black">
         <Navbar />
-        <div className="flex-grow flex justify-center items-center flex-col gap-4">
-          <h2 className="text-2xl text-red-400">Error loading loan details</h2>
-          <p className="text-gray-400">{error || "Loan not found"}</p>
-          <button 
-            onClick={() => window.history.back()}
-            className="px-6 py-2 bg-gray-800 text-white rounded-full hover:bg-gray-700 transition-colors"
+        <div className="flex-grow flex justify-center items-center">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-md w-full mx-auto p-8"
           >
-            Go Back
-          </button>
+            <div className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 rounded-xl p-8 border border-gray-700/50 text-center">
+              <div className="bg-red-500/10 p-4 rounded-full mb-6 inline-block">
+                <svg className="w-12 h-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-semibold text-white mb-3">Loan Not Found</h2>
+              <p className="text-gray-400 mb-6">{error || "This loan has never existed or no longer exists"}</p>
+              
+              <Link 
+                href="/loan"
+                className="group px-6 py-3 rounded-xl bg-gradient-to-r from-gray-700/50 via-gray-600/50 to-gray-700/50 
+                  hover:from-gray-600/50 hover:via-gray-500/50 hover:to-gray-600/50
+                  border border-gray-600/30 hover:border-gray-500/30 
+                  transition-all duration-300 ease-out
+                  text-gray-300 hover:text-white font-medium 
+                  shadow-lg shadow-gray-900/20 hover:shadow-gray-900/30
+                  flex items-center justify-center gap-2 mx-auto w-fit"
+              >
+                <svg className="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-0.5" 
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span>Back to Loans</span>
+              </Link>
+              
+              <div className="mt-6 text-gray-500 text-sm">
+                Redirecting in <span className="text-gray-400 font-medium">{redirectCountdown}</span> seconds...
+              </div>
+            </div>
+          </motion.div>
         </div>
         <Footer />
       </div>
@@ -397,6 +448,11 @@ export default function LoanDetailPage() {
   }
 
   const { loan: loanData, marketData } = loanDetails
+  
+  const isAccepted = loanData.acceptedAt !== loanData.createdAt
+  
+  loanData.active = loanData.active && isAccepted
+  
   const collateralRatio = calculateCollateralRatio()
   
   const requestedTokenInfo = getTokenInfo(loanData.tokenRequested)
@@ -424,15 +480,15 @@ export default function LoanDetailPage() {
         className="container mx-auto px-4 py-12 flex-grow"
       >
         <div className="mb-8">
-          <button 
-            onClick={() => window.history.back()}
+          <Link 
+            href="/loan"
             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Back to Loans
-          </button>
+          </Link>
         </div>
 
         <motion.div 
@@ -449,16 +505,36 @@ export default function LoanDetailPage() {
             <div className={`px-6 py-3 rounded-full text-lg font-medium ${
               loanData.active 
                 ? 'bg-green-500/20 text-green-400 border border-green-500/20' 
-                : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/20'
+                : !isAccepted
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/20'
+                  : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/20'
             } flex items-center justify-center gap-3`}>
               <div className="flex items-center">
-                <span className={`w-3 h-3 rounded-full ${loanData.active ? 'bg-green-400' : 'bg-yellow-400'}`}></span>
+                <span className={`w-3 h-3 rounded-full ${
+                  loanData.active 
+                    ? 'bg-green-400' 
+                    : !isAccepted
+                      ? 'bg-blue-400'
+                      : 'bg-yellow-400'
+                }`}></span>
+                <span className="ml-2">
+                  {loanData.active 
+                    ? 'Active' 
+                    : !isAccepted
+                      ? 'Pending'
+                      : 'Inactive'}
+                </span>
               </div>
             </div>
             
             <ShareLoanButton 
               loanId={params.id}
-              loanData={loanData}
+              loanData={{
+                ...loanData,
+                active: loanData.active,
+                isAccepted: isAccepted,
+                status: loanData.active ? 'active' : !isAccepted ? 'pending' : 'inactive'
+              }}
               requestedTokenInfo={requestedTokenInfo}
               collateralTokenInfo={collateralTokenInfo}
               displayLoanAmount={displayLoanAmount}
@@ -469,6 +545,10 @@ export default function LoanDetailPage() {
               riskLevel={riskLevel}
               formatDuration={formatDuration}
               shortenAddress={shortenAddress}
+              ansProfile={ansProfiles && {
+                borrower: ansProfiles[loanData.borrower],
+                lender: ansProfiles[loanData.lender]
+              }}
             />
           </div>
         </motion.div>
