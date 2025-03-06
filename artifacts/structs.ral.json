@@ -12,9 +12,9 @@
       "Bool"
     ],
     "isMutable": [
-      false,
       true,
-      false
+      true,
+      true
     ]
   },
   {
