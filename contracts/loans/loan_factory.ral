@@ -523,7 +523,7 @@ TxScript AcceptLoan (
 ) {
     let (token, amount) = loanFactory.getRequiredTokens(contract, false)
 
-    loanFactory.accept{callerAddress!() -> token: amount + 1, ALPH: dustAmount!()}(contract)
+    loanFactory.accept{callerAddress!() -> token: amount, ALPH: dustAmount!()}(contract)
 }
 
 TxScript CancelLoan (

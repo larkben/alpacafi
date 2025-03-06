@@ -21,7 +21,7 @@ const deployScript: DeployFunction<Settings> = async (
 
     await UpdateLoanCode.execute(signer, {
       initialFields: {
-          loan: "2e592369cd28f91517375b9cfdb57591b44696158cfe4f1280f69c979dd6d900",
+          loan: "cc54aa67366da4237c432b6e6546a71a762f0c3ae205fcb1117168494e0fa400",
           newCode: Loan.contract.bytecode
       },
       attoAlphAmount: DUST_AMOUNT
