@@ -140,8 +140,8 @@ Contract Loan (
         let parent = LoanFactory(addressToContractId!(parentContract))
         let collector = parent.depositFeeCollector(tokenRequested)
 
-        Fee(collector).depositInCollector{selfAddress!() -> tokenRequested: totalCommission, ALPH: dustAmount!()}(
-            selfAddress!(), 
+        Fee(collector).depositInCollector{borrower -> tokenRequested: totalCommission, ALPH: dustAmount!()}(
+            borrower, 
             tokenRequested, 
             totalCommission
         )

@@ -21,11 +21,11 @@ const deployScript: DeployFunction<Settings> = async (
     
     let tx = await PayLoan.execute(signer, {
       initialFields: {
-          loanFactory: "e8b899d2238e845321762afb6046afe6898fd37cd4140b3176349006850a9800",
-          contract: "f0f96513599b89018cfd93ce37218fcf6d453b1f5af2b9265f203ca875f91200"
+          loanFactory: "e1cc79ca2a9c3143426ffc3fbab5ac14550cb7c4ef94793598101b31cf831900",
+          contract: "86725cc49c4851103bce427bb71a414feca07a0955ac3e4d6dad10ea95337000"
       },
       attoAlphAmount: DUST_AMOUNT + (MINIMAL_CONTRACT_DEPOSIT * 2n),
-      tokens: [{id: ALPH_TOKEN_ID, amount: ONE_ALPH * 5n}]
+      tokens: [{id: "556d9582463fe44fbd108aedc9f409f69086dc78d994b88ea6c9e65f8bf98e00", amount: 55420000n}]
     })
 
     // should add this everywhere
