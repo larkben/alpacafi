@@ -54,6 +54,7 @@ const deployScript: DeployFunction<Settings> = async (
     })
     */
 
+    /*
     let tx = await EditLoanFactory.execute(signer, {
       initialFields: {
         contract: "9ac2843e6105edc5f48def727149f0da5a20035c3fd0e7e9b2b06d7b4015d200",
@@ -61,9 +62,10 @@ const deployScript: DeployFunction<Settings> = async (
       },
       attoAlphAmount: DUST_AMOUNT,
     })
+    */
 
     // should add this everywhere
-    console.log(tx.txId)
+    //console.log(tx.txId)
   }
   
   export default deployScript

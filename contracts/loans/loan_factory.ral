@@ -300,9 +300,6 @@ Contract LoanFactory (
 
         let caller = callerAddress!()
 
-        let owner = loan.getBorrower()
-        assert!(caller == owner, 0)
-
         let (token, amount) = loan.getTokenRequested()
         let totalAmount = loan.getInterest()
 
