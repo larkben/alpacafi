@@ -1,0 +1,27 @@
+struct VotingAccount {
+    account: Address,
+    votingPower: U256,
+    // .. code the rest out
+}
+
+
+Contract Governance (
+    admin: Address,
+
+) implements IFungibleToken {
+    // implement governance token here
+    // -> distribute weekly governance token (curve) descending
+
+    // voting account and or governance token stake
+    // -> voting account
+
+    // add new pool vote
+    // -> maybe not right due to the limited number of DIA oracle tokens and price feeds for tokens
+
+    // pool rate voting with sTokens
+    // -> rates
+    // -> minimum collateral required
+
+    // overall rates with governance token
+    // -> increments by 0.3%
+}

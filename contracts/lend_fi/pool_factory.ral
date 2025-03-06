@@ -1,8 +1,12 @@
+// need to also add fee router similar to alpacafi p2p lending
+
 Contract PoolFactory (
     admin: Address,
     poolTemplate: ByteVec,
     alpacaPoolTemplate: ByteVec,
-    comissionRate: U256
+    comissionRate: U256,
+    oracle: IDIAOracle,
+    alpaca: ByteVec
 ) {
     event Deposit (
         who: Address,
@@ -49,7 +53,91 @@ Contract PoolFactory (
     )
 
     // create pool
+    // .. code event
 
+    // collateral
+    
+    fn determineCollateralRatio(
+        tokenRequested: ByteVec,
+        tokenAmount: U256,
+        tokenOracle: Bool,
+        collateralToken: ByteVec, 
+        collateralAmount: U256,
+        collateralOracle: Bool,
+        threshhold: U256
+    ) -> (U256, Bool) {
+        if (tokenPairs.contains!(tokenRequested) == true && tokenPairs.contains!(collateralToken)) {
+            let mut loanValue = 0
+            let mut collateralValue = 0
+
+            // fetch token price
+            if (tokenOracle) {
+                loanValue = TestOracle(oracle).getValue(tokenPairs[tokenRequested].pair).value
+            }
+            else {
+                loanValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[tokenRequested].pair).value
+            }
+
+            // fetch collateral price
+            if (collateralOracle) {
+                collateralValue = TestOracle(oracle).getValue(tokenPairs[collateralToken].pair).value
+            }
+            else {
+                collateralValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[collateralToken].pair).value
+            }
+
+            if (loanValue == 0 || collateralValue == 0) {
+                return 0, false
+            }
+
+            let collateralDecimals = tokenPairs[collateralToken].decimals
+            let tokenDecimals = tokenPairs[tokenRequested].decimals
+
+            // Normalize collateral amount to 18 decimals
+            let collateralNormalized = (collateralAmount * (10 |**| 18)) / (10 |**| collateralDecimals)
+            let collateralValueUSD = (collateralNormalized * collateralValue) / (10 |**| 8) // Remove 8 decimals
+
+            // Normalize loan amount to 18 decimals
+            let loanNormalized = (tokenAmount * (10 |**| 18)) / (10 |**| tokenDecimals)
+            let loanValueUSD = (loanNormalized * loanValue) / (10 |**| 8) // Remove 8 decimals
+
+            // Compute collateral-to-loan ratio in basis points (10000 = 100%)
+            let ratio = (collateralValueUSD * 10000) / loanValueUSD // Multiply before division to avoid precision loss
+
+            if (ratio > threshhold) {
+                return ratio, true
+            }
+
+            else {
+                return ratio, false
+            }
+        }
+
+        return 0, false
+    }
+
+    @using(checkExternalCaller = false) 
+    pub fn determineCollateralAmount(
+        tokenAmount: U256,
+        desiredRatio: U256
+    ) -> (U256) {
+        let loanValue = oracle.getValue(poolPair).value
+        let collateralValue = oracle.getValue(poolPair).value
+
+        if (loanValue == 0 || collateralValue == 0 || desiredRatio == 0) {
+            return 0
+        }
+
+        let loanNormalized = (tokenAmount * (10 |**| 18)) / (10 |**| poolDecimals)
+        let loanValueUSD = (loanNormalized * loanValue) / (10 |**| 8)
+
+        let requiredCollateralUSD = (loanValueUSD * desiredRatio) / 10000
+
+        let collateralNormalized = (requiredCollateralUSD * (10 |**| 8)) / collateralValue
+        let requiredCollateralAmount = (collateralNormalized * (10 |**| poolDecimals)) / (10 |**| 18)
+
+        return requiredCollateralAmount
+    }
 
     // deposit
     @using(checkExternalCaller = false, preapprovedAssets = true, assetsInContract = enforced, updateFields = true)
@@ -141,6 +229,7 @@ Contract PoolFactory (
         )
     }
 
+    // the liquidator should pay back the loan principal to recieve discounted collateral
     @using(checkExternalCaller = false, preapprovedAssets = false, assetsInContract = enforced, updateFields = true)
     pub fn liquidate(pair: ByteVec, path: ByteVec) -> () {
         let pool = Pool(subContractId!(pair))
