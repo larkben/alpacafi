@@ -107,6 +107,10 @@ const AuctionCard = ({
   const isLoaner = account?.address === loaner
   const hasNoBids = highestBidder === loaner
 
+  const isAuctionNotStarted = hasNoBids && loaner === highestBidder
+
+  const canPlaceBid = !isAuctionEnded || isAuctionNotStarted
+
   const handleRedeem = async () => {
     if (!signer) {
       setError('Please connect your wallet')
@@ -140,7 +144,7 @@ const AuctionCard = ({
     >
       <div className="absolute top-0 left-0 right-0 bg-purple-500/20 rounded-t-xl p-3 text-center border-b border-purple-500/20">
         <span className="text-xs text-purple-300 flex items-center justify-center gap-2">
-          {hasNoBids ? (
+          {isAuctionNotStarted ? (
             <>
               Place a bid to start the auction
             </>
@@ -248,7 +252,7 @@ const AuctionCard = ({
           </div>
         )}
         
-        {!isAuctionEnded && !isHighestBidder && (
+        {canPlaceBid && !isHighestBidder && (
           <div className="mb-4">
             <div className="relative">
               <input
@@ -315,7 +319,7 @@ const AuctionCard = ({
           </div>
         )}
         
-        {isAuctionEnded && !isHighestBidder && !isLoaner && (
+        {isAuctionEnded && !isAuctionNotStarted && !isHighestBidder && !isLoaner && (
           <div className="mb-4 p-3 bg-gray-800/50 rounded-lg text-center">
             <p className="text-gray-400 text-sm">This auction has ended</p>
           </div>
