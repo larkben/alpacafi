@@ -8,6 +8,9 @@ Contract PoolFactory (
     oracle: IDIAOracle,
     alpaca: ByteVec
 ) {
+
+    mapping [ByteVec, PairInfo] tokenPairs
+
     event Deposit (
         who: Address,
         pair: ByteVec,
@@ -57,7 +60,7 @@ Contract PoolFactory (
 
     // collateral
     
-    fn determineCollateralRatio(
+    pub fn determineCollateralRatio(
         tokenRequested: ByteVec,
         tokenAmount: U256,
         tokenOracle: Bool,

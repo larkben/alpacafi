@@ -1,7 +1,7 @@
 import "std/fungible_token_interface"
 
 Contract Pool (
-    admin: Address,
+    admin: ByteVec,
     debtTemplate: ByteVec,
     poolToken: ByteVec,
     poolDecimals: U256,
@@ -15,6 +15,9 @@ Contract Pool (
     mut depositedAmount: U256,
     mut totalBorrowed: U256,
     mut fees: U256,
+    // base rate - determined by governance
+    mut baseRate: U256,
+    mut poolFee: U256,
     // pool specs
     oracle: IDIAOracle
 ) implements IFungibleToken {
@@ -57,28 +60,48 @@ Contract Pool (
         return selfTokenId!()
     }
 
-    // calculate accrued interest
-    fn calculateAccruedInterest(loanInfo: LoanInfo) -> (U256) {
-        let timeElapsed = blockTimeStamp!() - loanInfo.lastInterestUpdate
-        // Interest = principal * rate * time / (seconds per year * 10000)
-        let secondsPerYear = 31536000
-        return (loanInfo.principal * interestRate * timeElapsed) / (secondsPerYear * 10000)
-    }
+    pub fn getAccruedInterest(debt: ByteVec) -> (U256) {
+        
+        let interest = Debt(debt).getInterestRate()
+        let tokenAmount = Debt(debt).getLoanAmount()
 
-    // this needs to be dynamic
-    fn getPoolRate() -> (U256) {
-        let utilization = (totalBorrowed * 10000) / totalPoolAssets
+        if (interest > 0) {
+            // Calculate elapsed time
+            let elapsedTime = blockTimeStamp!() - Debt(debt).getTimeCreated()
     
-        if (utilization < 5000) { // < 50%
-            return 200 // 2%
-        } else if (utilization < 8000) { // 50% - 80%
-            return 500 // 5%
-        } else if (utilization < 9000) { // 80% - 90%
-            return 800 // 8%
+            // Avoid integer truncation: multiply first, then divide
+            let gain = (tokenAmount * interest * elapsedTime) / (31556926000 * 10000)
+    
+            // Calculate 7% flat interest (tokenAmount * 7 / 100)
+            let flatInterest = (tokenAmount * 3) / 100
+    
+            // Return the original amount + accrued interest + flat interest
+            return tokenAmount + gain + flatInterest
         } else {
-            return 1500 // 15% (High-risk)
+            return tokenAmount
         }
     }
+
+    pub fn getPoolRate() -> (U256) {
+        let utilization = (totalBorrowed * 10000) / totalPoolAssets
+        
+        // Smooth curve that starts at baseRate and increases exponentially with utilization
+        // Formula: rate = baseRate + (utilization^2 / 10000) * multiplier
+        
+        let utilizationSquared = (utilization * utilization) / 10000
+        let multiplier = 2000  // This controls how steep the curve gets
+        
+        // Rate calculation with governance-defined baseRate as input
+        // This creates a curve that starts at baseRate and increases based on utilization
+        let dynamicRate = baseRate + (utilizationSquared * multiplier) / 10000
+        
+        // Cap the maximum rate at 2000 (20%)
+        if (dynamicRate > 2000) {
+          return 2000
+        }
+        
+        return dynamicRate
+      }
 
     pub fn getTotalRepayment(contract: ByteVec) -> (U256) {
         let debt = Debt(subContractId!(contract))
@@ -89,8 +112,8 @@ Contract Pool (
     }
 
     @using(checkExternalCaller = false, updateFields = true)
-    pub fn getPoolFee(amount: U256) -> (U256) {
-        let flatFee = (amount * 3) / 100            // 3% fee on borrow
+    pub fn getPoolFee(amountIn: U256) -> (U256) {
+        let flatFee = (amountIn * poolFee) / 10000            // 300 = 3%
 
         fees = fees + flatFee
 
@@ -153,12 +176,12 @@ Contract Pool (
         assert!(totalPoolAssets - totalBorrowed >= amount, PoolCodes.InsufficientLiquidity)
 
         let precisionFactor = 1000000000000000000 // 1e18
-        let requiredCollateral = determineCollateralAmount(amount, 15000) // 150% collateral
+        let requiredCollateral = PoolFactory(admin).determineCollateralAmount(amount, 15000) // 150% collateral
         let rate = getPoolRate()
 
         // Take fee
-        let poolFee = getPoolFee(amount)
-        transferToken!(caller, selfAddress!(), poolToken, poolFee)
+        let flatFee = getPoolFee(amount)
+        transferToken!(caller, selfAddress!(), poolToken, flatFee)
 
         // Create debt contract
         let (encodeImmutableFields, encodeMutableFields) = Debt.encodeFields!(
@@ -232,8 +255,9 @@ Contract Pool (
     
         // verify debt is from pool
         assert!(selfAddress!() == parent, PoolCodes.WrongDebtPool)
-    
-        let collateralRatio = determineCollateralRatio(totalDebt, collateral)
+        
+        // edit for multi-collateral
+        let collateralRatio = PoolFactory(admin).determineCollateralRatio(totalDebt, collateral)
         assert!(collateralRatio < 15000, PoolCodes.InsufficientCollateral) // Must be below 150% to liquidate
     
         let liquidationPenalty = (collateral * 8) / 100  // 8% liquidation fee
@@ -249,15 +273,6 @@ Contract Pool (
         totalPoolAssets = totalPoolAssets + seizedCollateral
 
         debt.destroyDebt(selfAddress!())
-    }
-
-    @using(checkExternalCaller = true, updateFields = true, assetsInContract = true)
-    pub fn collectFees() -> () {
-        checkCaller!(callerAddress!() == admin, 1)
-
-        transferToken!(selfAddress!(), callerAddress!(), poolToken, fees)
-
-        fees = fees - fees
     }
 
     @using(checkExternalCaller = true, assetsInContract = true)
