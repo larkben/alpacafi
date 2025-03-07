@@ -59,11 +59,12 @@ const Terminal = () => {
     fetch(`${backendUrl}/api/loans`)
       .then(res => res.json())
       .then(data => {
+        const allLoans = data.loans;
         const activeLoans = data.loans.filter(loan => loan.active);
         const totalLoans = data.loans.length;
         
-        const avgApr = activeLoans.length > 0
-          ? activeLoans.reduce((sum, loan) => sum + (Number(loan.interest) / 10000), 0) / activeLoans.length * 100
+        const avgApr = allLoans.length > 0
+          ? allLoans.reduce((sum, loan) => sum + (Number(loan.interest) / 10000), 0) / allLoans.length * 100
           : 0;
 
         const tokenPrices = {};
@@ -73,8 +74,11 @@ const Terminal = () => {
         const calculateStats = () => {
           let totalCollateralRatio = 0;
           let tvlUSD = 0;
+          let loansWithRatio = 0;
 
-          activeLoans.forEach(loan => {
+          console.log(allLoans);
+
+          allLoans.forEach(loan => {
             const collateralInfo = tokensList.find(t => t.id === loan.collateralToken);
             const tokenInfo = tokensList.find(t => t.id === loan.tokenRequested);
             
@@ -86,6 +90,7 @@ const Terminal = () => {
                 const loanValueUSD = (loan.tokenAmount / Math.pow(10, tokenInfo.decimals)) * tokenPrices[loan.tokenRequested];
                 if (loanValueUSD > 0) {
                   totalCollateralRatio += (collateralValueUSD / loanValueUSD) * 100;
+                  loansWithRatio++;
                 }
               }
             }
@@ -95,7 +100,7 @@ const Terminal = () => {
             activeLoans: activeLoans.length,
             totalLoans,
             avgApr,
-            avgCollateralRatio: activeLoans.length > 0 ? totalCollateralRatio / activeLoans.length : 0,
+            avgCollateralRatio: loansWithRatio > 0 ? totalCollateralRatio / loansWithRatio : 0,
             tvlUSD
           });
         };
