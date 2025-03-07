@@ -127,12 +127,12 @@ export default function LiquidationPage() {
 
   useEffect(() => {
     if (!isPricesLoading && loans.length > 0) {
-
       const total = loans.reduce((sum, loan) => {
-        const tokenPrice = tokenPrices[loan.tokenRequested] || 0
-        const loanValue = (parseFloat(loan.tokenAmount) / 1e18) * tokenPrice
+        const collateralPrice = tokenPrices[loan.collateralToken] || 0
+        const collateralInfo = getTokenInfo(loan.collateralToken)
+        const collateralValue = (parseFloat(loan.collateralAmount) / Math.pow(10, collateralInfo.decimals)) * collateralPrice
 
-        return sum + loanValue
+        return sum + collateralValue
       }, 0)
 
       setTotalLiquidationValue(total)
@@ -177,8 +177,11 @@ export default function LiquidationPage() {
         const tokenPrice = tokenPrices[loan.tokenRequested] || 0
         const collateralPrice = tokenPrices[loan.collateralToken] || 0
         
-        const loanValue = (parseFloat(loan.tokenAmount) / 1e18) * tokenPrice
-        const collateralValue = (parseFloat(loan.collateralAmount) / 1e18) * collateralPrice
+        const tokenInfo = getTokenInfo(loan.tokenRequested)
+        const collateralInfo = getTokenInfo(loan.collateralToken)
+        
+        const loanValue = (parseFloat(loan.tokenAmount) / Math.pow(10, tokenInfo.decimals)) * tokenPrice
+        const collateralValue = (parseFloat(loan.collateralAmount) / Math.pow(10, collateralInfo.decimals)) * collateralPrice
         
         const ratio = loanValue > 0 ? (collateralValue / loanValue) * 100 : 0
         return acc + ratio
