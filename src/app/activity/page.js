@@ -38,6 +38,11 @@ const formatTimestamp = (timestamp) => {
 
 const shortenAddress = (address) => {
   if (!address) return "Unknown";
+  
+  if (address === "tgx7VNFoP9DJiFMFgXXtafQZkUvyEdDHT9ryamHJYrjq") {
+    return "Alpacafi";
+  }
+  
   return `${address.substring(0, 6)}...${address.substring(address.length - 6)}`;
 };
 
@@ -483,10 +488,20 @@ export default function StatsPage() {
                 <tbody className="divide-y divide-gray-700/30">
                   <AnimatePresence mode="wait">
                     {paginatedLogs.map((log, index) => {
+                      const useCollateralToken = ['loan_created', 'loan_canceled', 'loan_liquidated', 'auction_created'].includes(log.type);
+                      
                       const requestedToken = getTokenInfo(log.tokenRequested);
-                      const tokenAmount = log.tokenAmount ? 
-                        Number(log.tokenAmount) / Math.pow(10, requestedToken.decimals) : 0;
-                      const usdValue = getUsdValue(log.tokenRequested, log.tokenAmount, requestedToken.decimals);
+                      const collateralToken = log.collateralToken ? getTokenInfo(log.collateralToken) : requestedToken;
+                      
+                      const displayToken = useCollateralToken ? collateralToken : requestedToken;
+                      
+                      const tokenAmount = useCollateralToken && log.collateralAmount ? 
+                        Number(log.collateralAmount) / Math.pow(10, displayToken.decimals) : 
+                        log.tokenAmount ? Number(log.tokenAmount) / Math.pow(10, displayToken.decimals) : 0;
+                      
+                      const usdValue = useCollateralToken ? 
+                        getUsdValue(log.collateralToken, log.collateralAmount, displayToken.decimals) : 
+                        getUsdValue(log.tokenRequested, log.tokenAmount, displayToken.decimals);
                       
                       return (
                         <motion.tr 
@@ -521,11 +536,11 @@ export default function StatsPage() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-2">
                               <img 
-                                src={requestedToken.logoURI} 
-                                alt={requestedToken.symbol} 
+                                src={displayToken.logoURI} 
+                                alt={displayToken.symbol} 
                                 className="w-5 h-5 rounded-full"
                               />
-                              <span>{requestedToken.symbol}</span>
+                              <span>{displayToken.symbol}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
