@@ -96,9 +96,10 @@ export default function AuctionsPage() {
 
       if (!isPricesLoading) {
         const total = transformedAuctions.reduce((sum, auction) => {
-          const tokenPrice = tokenPrices[auction.bidToken] || 0
-          const auctionValue = (parseFloat(auction.bidAmount) / 1e18) * tokenPrice
-          return sum + auctionValue
+          const collateralPrice = tokenPrices[auction.collateralToken] || 0
+          const collateralInfo = getTokenInfo(auction.collateralToken)
+          const collateralValue = (parseFloat(auction.collateralAmount) / Math.pow(10, collateralInfo.decimals)) * collateralPrice
+          return sum + collateralValue
         }, 0)
         setTotalAuctionsValue(total)
       }
@@ -168,8 +169,11 @@ export default function AuctionsPage() {
         const tokenPrice = tokenPrices[auction.bidToken] || 0
         const collateralPrice = tokenPrices[auction.collateralToken] || 0
         
-        const auctionValue = (parseFloat(auction.bidAmount) / 1e18) * tokenPrice
-        const collateralValue = (parseFloat(auction.collateralAmount) / 1e18) * collateralPrice
+        const tokenInfo = getTokenInfo(auction.bidToken)
+        const collateralInfo = getTokenInfo(auction.collateralToken)
+        
+        const auctionValue = (parseFloat(auction.bidAmount) / Math.pow(10, tokenInfo.decimals)) * tokenPrice
+        const collateralValue = (parseFloat(auction.collateralAmount) / Math.pow(10, collateralInfo.decimals)) * collateralPrice
         
         const ratio = auctionValue > 0 ? (collateralValue / auctionValue) * 100 : 0
         return acc + ratio
