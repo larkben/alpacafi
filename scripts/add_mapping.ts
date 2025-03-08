@@ -24,11 +24,11 @@ const deployScript: DeployFunction<Settings> = async (
     await TokenMapping.execute(signer, {
       initialFields: {
         loanFactory: "e1cc79ca2a9c3143426ffc3fbab5ac14550cb7c4ef94793598101b31cf831900",
-        token: "9b3070a93fd5127d8c39561870432fdbc79f598ca8dbf2a3398fc100dfd45f00",
+        token: "383bc735a4de6722af80546ec9eeb3cff508f2f68e97da19489ce69f3e703200",
         add: true,
-        pairtoken: stringToHex("ABX/USD"),
-        decimals: 9n,
-        alephiumOracle: false
+        pairtoken: stringToHex("WBTC/USD"),
+        decimals: 8n,
+        alephiumOracle: true
       },
       attoAlphAmount: DUST_AMOUNT + (MINIMAL_CONTRACT_DEPOSIT * 2n)
     })
