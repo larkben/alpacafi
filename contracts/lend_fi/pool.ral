@@ -5,7 +5,6 @@ Contract Pool (
     debtTemplate: ByteVec,
     poolToken: ByteVec,
     poolDecimals: U256,
-    poolPair: ByteVec,
     // sPoolToken and Pool values
     name: ByteVec,
     symbol: ByteVec,
@@ -17,9 +16,7 @@ Contract Pool (
     mut fees: U256,
     // base rate - determined by governance
     mut baseRate: U256,
-    mut poolFee: U256,
-    // pool specs
-    oracle: IDIAOracle
+    mut poolFee: U256
 ) implements IFungibleToken {
 
     event NewDebt(who: Address, loan: U256, collateral: U256, rate: U256, contract: ByteVec)
@@ -176,7 +173,7 @@ Contract Pool (
         assert!(totalPoolAssets - totalBorrowed >= amount, PoolCodes.InsufficientLiquidity)
 
         let precisionFactor = 1000000000000000000 // 1e18
-        let requiredCollateral = PoolFactory(admin).determineCollateralAmount(amount, 15000) // 150% collateral
+        let requiredCollateral = PoolFactory(admin).determineCollateralAmount(poolPair, poolDecimals, amount, 15000) // 150% collateral
         let rate = getPoolRate()
 
         // Take fee
@@ -208,8 +205,7 @@ Contract Pool (
     }
 
     @using(checkExternalCaller = false, assetsInContract = true, preapprovedAssets = true, updateFields = true)
-    pub fn repay(contract: ByteVec) -> () {
-        let caller = callerAddress!()
+    pub fn repay(caller: Address, contract: ByteVec) -> () {
 
         // Load the debt contract
         let debt = Debt(subContractId!(contract))
@@ -246,18 +242,42 @@ Contract Pool (
 	@using(checkExternalCaller = false, assetsInContract = true, preapprovedAssets = false, updateFields = true)
     pub fn liquidate(contract: ByteVec) -> () {
         let debt = Debt(subContractId!(contract))
+        let adminContract = PoolFactory(admin)
     
-        let totalDebt = debt.calculateRepayment()
-        let caller = callerAddress!()
-    
-        let collateral = debt.getCollateralAmount()
+        // validate debt comes from this contract
         let parent = debt.getParentAddress()
+        assert!(selfAddress!() == parent, PoolCodes.WrongDebtPool)
+
+        let caller = callerAddress!()
+
+        // token
+        let oracle = adminContract.getOracleForToken(poolToken)
+        
+        // collateral info
+        let collateral = debt.getCollateralToken()
+        let collateralAmount = debt.getCollateralAmount()
+        let collateralOracle = adminContract.getOracleForToken(collateralToken)
+
+        // validate debt comes from this contract
+        let parent = debt.getParentAddress()
+
+        // 
+        let totalDebt = debt.calculateRepayment()
     
         // verify debt is from pool
         assert!(selfAddress!() == parent, PoolCodes.WrongDebtPool)
         
         // edit for multi-collateral
-        let collateralRatio = PoolFactory(admin).determineCollateralRatio(totalDebt, collateral)
+        let collateralRatio = PoolFactory(admin).determineCollateralRatio(
+            poolToken,
+            totalDebt,
+            oracle,
+            collateral,
+            collateralAmount,
+            collateralOracle,
+            debt.getRatio()    // 150 minimum but increasing from there for other more speculative tokens ~
+        )
+
         assert!(collateralRatio < 15000, PoolCodes.InsufficientCollateral) // Must be below 150% to liquidate
     
         let liquidationPenalty = (collateral * 8) / 100  // 8% liquidation fee

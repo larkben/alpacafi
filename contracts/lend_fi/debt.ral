@@ -3,13 +3,20 @@ import "std/nft_interface"
 Contract Debt (
     debtor: Address,
     loanAmount: U256,
+    collateralToken: ByteVec,
     collateralAmount: U256,
     timeCreated: U256,
     interestRate: U256,
+    ratio: U256,
     parentContract: Address
 ) {
+    // loanToken
     pub fn getLoanAmount() -> U256 {
         return loanAmount
+    }
+
+    pub fn getCollateralToken() -> ByteVec {
+        return collateralToken
     }
 
     pub fn getCollateralAmount() -> U256 {
@@ -30,6 +37,10 @@ Contract Debt (
 
     pub fn getInterestRate() -> U256 {
         return interestRate
+    }
+
+    pub fn getRatio() -> U256 {
+        return ratio
     }
 
     pub fn calculateRepayment() -> (U256) {
