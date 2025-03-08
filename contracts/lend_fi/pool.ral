@@ -167,31 +167,33 @@ Contract Pool (
     }
 
     @using(checkExternalCaller = false, assetsInContract = true, preapprovedAssets = true, updateFields = true)
-    pub fn borrow(caller: Address, amount: U256, value: ByteVec) -> () {
+    pub fn borrow(caller: Address, collateralToken: ByteVec, amountRequest: U256, path: ByteVec) -> () {
 
-        assert!(amount > 0, PoolCodes.CannotBorrowZero)
-        assert!(totalPoolAssets - totalBorrowed >= amount, PoolCodes.InsufficientLiquidity)
+        assert!(amountRequest > 0, PoolCodes.CannotBorrowZero)
+        assert!(totalPoolAssets - totalBorrowed >= amountRequest, PoolCodes.InsufficientLiquidity)
 
         let precisionFactor = 1000000000000000000 // 1e18
-        let requiredCollateral = PoolFactory(admin).determineCollateralAmount(poolPair, poolDecimals, amount, 15000) // 150% collateral
+        let requiredCollateral = PoolFactory(admin).determineCollateralAmount(poolToken, poolDecimals, amountRequest, 15000) // 150% collateral
         let rate = getPoolRate()
 
         // Take fee
-        let flatFee = getPoolFee(amount)
+        let flatFee = getPoolFee(amountRequest)
         transferToken!(caller, selfAddress!(), poolToken, flatFee)
 
         // Create debt contract
         let (encodeImmutableFields, encodeMutableFields) = Debt.encodeFields!(
             caller,
-            amount,
+            amountRequest,       // amount of pool token requested
+            collateralToken,     // collateral token
             requiredCollateral,
             blockTimeStamp!(),
             rate,
+            15000,               // collateralization ratio
             selfAddress!()
         )
 
         let debtId = copyCreateSubContract!{callerAddress!() -> ALPH: minimalContractDeposit!() * 2, poolToken: requiredCollateral}(
-            value,
+            path,
             debtTemplate,
             encodeImmutableFields,
             encodeMutableFields
@@ -201,7 +203,7 @@ Contract Pool (
 
         transferToken!(selfAddress!(), caller, poolToken, amount)
 
-        emit NewDebt(caller, amount, requiredCollateral, rate, value)
+        //emit NewDebt(caller, amount, requiredCollateral, rate, value)
     }
 
     @using(checkExternalCaller = false, assetsInContract = true, preapprovedAssets = true, updateFields = true)
