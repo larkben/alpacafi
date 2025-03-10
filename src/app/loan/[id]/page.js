@@ -606,7 +606,7 @@ export default function LoanDetailPage() {
                 </div>
                 
                 <div className="p-4 bg-gray-800/50 rounded-lg">
-                  <span className="text-sm text-gray-400 block mb-2">Duration</span>
+                  <span className="text-sm text-gray-400 block mb-2">Term</span>
                   <span className="font-medium text-xl text-white">{formatDuration(parseInt(loanData.duration))}</span>
                 </div>
                 

@@ -131,6 +131,15 @@ export function getTokensList(): TokenInfo[] {
       logoURI: "https://raw.githubusercontent.com/alephium/token-list/master/logos/USDTeth.png",
       isOracle: true
     },
+    {
+      id: "383bc735a4de6722af80546ec9eeb3cff508f2f68e97da19489ce69f3e703200",
+      name: "Wrapped BTC (AlphBridge)",
+      symbol: "WBTC",
+      decimals: 8,
+      description: "wBTC Bridged to Alephium from Alephium Bridge",
+      logoURI: "https://raw.githubusercontent.com/alephium/token-list/master/logos/WBTC.png",
+      isOracle: true
+    },
     /*
     {
       id: "75e1e9f91468616a371fe416430819bf5386a3e6a258864c574271a404ec8900",

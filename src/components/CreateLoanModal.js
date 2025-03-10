@@ -180,7 +180,7 @@ const CreateLoanModal = ({
   const [collateralAmount, setCollateralAmount] = useState('')
   const [enableLiquidation, setEnableLiquidation] = useState(true)
   const [term, setTerm] = useState('')
-  const [termUnit, setTermUnit] = useState('minutes')
+  const [termUnit, setTermUnit] = useState('days')
   const [interestRate, setInterestRate] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const config = getAlephiumLoanConfig()
@@ -249,7 +249,23 @@ const CreateLoanModal = ({
   }
 
   const handleSetMaxLoanAmount = () => {
-    setLoanAmount(loanTokenBalance.toString())
+    if (!collateralAmount || isPricesLoading) return
+    
+    // Calculer la valeur en USD du collatéral
+    const collateralUSDValue = calculateUSDValue(collateralAmount, collateralToken)
+    
+    // Calculer le montant maximum du prêt en respectant un ratio de collatéral minimum de 150%
+    // Formule: montantMaxPrêt = valeurCollatéral / 1.5
+    const maxLoanUSDValue = collateralUSDValue / 1.5
+    
+    // Convertir la valeur USD en montant de token
+    const loanTokenInfo = tokensList.find(t => t.symbol === loanToken)
+    if (!loanTokenInfo || !tokenPrices[loanTokenInfo.id]) return
+    
+    const maxLoanAmount = maxLoanUSDValue / tokenPrices[loanTokenInfo.id]
+    
+    // Arrondir à 6 décimales pour éviter les problèmes de précision
+    setLoanAmount((Math.floor(maxLoanAmount * 1000000) / 1000000).toString())
   }
 
   const handleSetMaxCollateralAmount = () => {
@@ -324,7 +340,7 @@ const CreateLoanModal = ({
     if (isSubmitting) return 'Creating...'
     if (!loanAmount || !collateralAmount) return 'Enter amounts'
     if (!term) return 'Enter loan term'
-    if (!interestRate) return 'Enter APR'
+    if (!interestRate) return 'Enter Interest'
     if (!isCollateralRatioValid()) return 'Collateral ratio must be at least 150%'
     return 'Create Loan Request'
   }
@@ -385,6 +401,18 @@ const CreateLoanModal = ({
                         placeholder="0.00"
                       />
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                        {collateralAmount && collateralAmount > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleSetMaxLoanAmount}
+                            className="px-2 py-1 text-xs font-medium text-green-400 hover:text-green-300 
+                              bg-green-500/10 hover:bg-green-500/20 
+                              border border-green-500/20 hover:border-green-500/30 
+                              rounded-lg transition-colors duration-200"
+                          >
+                            MAX
+                          </button>
+                        )}
                         {!isPricesLoading && loanAmount && (
                           <span className="text-sm text-gray-400">
                             ≈ ${formatNumber(calculateUSDValue(loanAmount, loanToken))}
@@ -469,7 +497,7 @@ const CreateLoanModal = ({
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      APR
+                      Interest
                     </label>
                     <div className="relative">
                       <input

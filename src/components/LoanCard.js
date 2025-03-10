@@ -174,7 +174,7 @@ const LoanCard = ({
             >
               {acceptedAt === createdAt ? (
                 <>
-                  <span className="text-xs text-gray-400 block mb-1">Duration</span>
+                  <span className="text-xs text-gray-400 block mb-1">Term</span>
                   <span className="font-medium">
                     {(() => {
                       const minutes = duration / (60 * 1000);
@@ -203,8 +203,17 @@ const LoanCard = ({
               whileHover={{ backgroundColor: "rgba(31, 41, 55, 0.7)" }}
               transition={{ duration: 0.2 }}
             >
-              <span className="text-xs text-gray-400 block mb-1">APR</span>
+              <span className="text-xs text-gray-400 block mb-1">Interest</span>
               <span className="font-medium text-green-400">{(interest / 100).toFixed(2)}%</span>
+              <span className="text-xs text-gray-500 block">
+                APR: {(() => {
+                  // Convert duration from milliseconds to years
+                  const durationInYears = duration / (365 * 24 * 60 * 60 * 1000);
+                  // Calculate APR: (interest rate / duration in years) * 1 year
+                  const apr = (interest / 100) * (1 / durationInYears);
+                  return apr.toFixed(2) + '%';
+                })()}
+              </span>
             </motion.div>
           </div>
 

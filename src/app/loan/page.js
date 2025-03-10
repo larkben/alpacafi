@@ -236,7 +236,7 @@ export default function LoanPage() {
       value: rawLoans.filter(l => l.active).length 
     },
     { 
-      label: 'Average APR', 
+      label: 'Average Interest', 
       value: `${((rawLoans.reduce((acc, curr) => acc + Number(curr.interest), 0) / (rawLoans.length || 1)) / 100).toFixed(2)}%` 
     },
   ]
@@ -262,7 +262,7 @@ export default function LoanPage() {
           return loan.status === 'active';
         case 'pending':
           return loan.status === 'pending';
-        case 'high apr':
+        case 'high interest':
           return parseFloat(loan.interest) > 1500;
         case 'low risk':
           return collateralRatio >= 300;
@@ -276,7 +276,7 @@ export default function LoanPage() {
     'all loans': 'View all available loans on the platform',
     'active': 'Loans that have been funded and are currently active',
     'pending': 'Loan requests waiting to be funded by a lender',
-    'high apr': 'Loans with an Annual Percentage Rate (APR) above 15%',
+    'high interest': 'Loans with an Interest above 15%',
     'low risk': 'Loans with a collateral ratio above 300%, providing extra security for lenders'
   };
 
@@ -381,7 +381,7 @@ export default function LoanPage() {
 
         <div className="flex justify-between items-center mb-8">
           <motion.div className="flex flex-wrap gap-4">
-            {['All Loans', 'Active', 'Pending', 'High APR', 'Low Risk'].map((filter) => (
+            {['All Loans', 'Active', 'Pending', 'High Interest', 'Low Risk'].map((filter) => (
               <div key={filter} className="relative tooltip-container">
                 <motion.button
                   whileHover={{ scale: 1.05 }}

@@ -16,18 +16,24 @@ const getTokenInfo = (tokenId) => {
   }
 }
 
-const getStatusColor = (ratio) => {
-  if (ratio >= 300) return 'rgba(57, 255, 20, 0.2)'
-  if (ratio >= 199) return 'rgba(100, 255, 0, 0.2)'
-  if (ratio >= 149) return 'rgba(255, 255, 0, 0.2)'
-  return 'rgba(255, 0, 0, 0.2)'
+const getStatusColor = (interest) => {
+  const interestPercent = interest / 100;
+  
+  if (interestPercent < 5) return 'rgba(255, 0, 0, 0.2)';
+  
+  if (interestPercent >= 5 && interestPercent <= 15) return 'rgba(255, 165, 0, 0.2)';
+  
+  return 'rgba(57, 255, 20, 0.2)';
 }
 
-const getStatusSize = (ratio) => {
-  if (ratio >= 300) return 120
-  if (ratio >= 199) return 100
-  if (ratio >= 149) return 80
-  return 60
+const getStatusSize = (interest) => {
+  const interestPercent = interest / 100;
+  
+  if (interestPercent < 5) return 60;
+  
+  if (interestPercent >= 5 && interestPercent <= 15) return 90;
+  
+  return 120;
 }
 
 const calculateCollateralRatio = (tokenPrices, tokenAmount, tokenRequested, collateralAmount, collateralToken) => {
@@ -64,9 +70,8 @@ const LoanBubble = ({
   const bodyRef = useRef(null)
   const frameRef = useRef()
   
-  const calculatedRatio = calculateCollateralRatio(tokenPrices, tokenAmount, tokenRequested, collateralAmount, collateralToken)
-  const size = getStatusSize(calculatedRatio)
-  const statusColor = getStatusColor(calculatedRatio)
+  const bubbleSize = getStatusSize(interest)
+  const bubbleColor = getStatusColor(interest)
 
   useEffect(() => {
     if (!containerRef?.current || !engine || !bubbleRef.current) return
@@ -77,16 +82,16 @@ const LoanBubble = ({
     const startX = bounds.width / 2 + (Math.random() - 0.5) * (bounds.width / 2)
     const startY = bounds.height / 2 + (Math.random() - 0.5) * (bounds.height / 2)
     
-    positionRef.current = { x: startX - size / 2, y: startY - size / 2 }
+    positionRef.current = { x: startX - bubbleSize / 2, y: startY - bubbleSize / 2 }
     if (bubbleRef.current) {
       bubbleRef.current.style.transform = `translate(${positionRef.current.x}px, ${positionRef.current.y}px)`
     }
 
-    const bubble = Matter.Bodies.circle(startX, startY, size / 2, {
+    const bubble = Matter.Bodies.circle(startX, startY, bubbleSize / 2, {
       restitution: 0.7,
       friction: 0.01,
       frictionAir: 0.001,
-      mass: size / 80,
+      mass: bubbleSize / 80,
       label: `loan-${id}`,
       collisionFilter: {
         group: 0,
@@ -109,8 +114,8 @@ const LoanBubble = ({
     const updatePosition = () => {
       if (!bodyRef.current || !bubbleRef.current) return
 
-      const newX = bodyRef.current.position.x - size / 2
-      const newY = bodyRef.current.position.y - size / 2
+      const newX = bodyRef.current.position.x - bubbleSize / 2
+      const newY = bodyRef.current.position.y - bubbleSize / 2
 
       if (Math.abs(newX - positionRef.current.x) > 0.1 || Math.abs(newY - positionRef.current.y) > 0.1) {
         positionRef.current = { x: newX, y: newY }
@@ -131,28 +136,22 @@ const LoanBubble = ({
         bodyRef.current = null
       }
     }
-  }, [containerRef, engine, size, id])
+  }, [containerRef, engine, bubbleSize, id])
 
   return (
     <>
       <div 
         ref={bubbleRef}
+        className="absolute cursor-pointer flex flex-col items-center justify-center rounded-full transition-transform hover:scale-110"
         style={{
-          position: 'absolute',
-          width: size,
-          height: size,
-          background: statusColor,
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          zIndex: 10,
-          pointerEvents: 'auto',
-          borderRadius: '50%',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          transition: 'transform 0.2s ease-out, box-shadow 0.2s ease-out',
+          width: `${bubbleSize}px`,
+          height: `${bubbleSize}px`,
+          backgroundColor: bubbleColor,
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          border: '2px solid rgba(255, 255, 255, 0.1)',
+          zIndex: isModalOpen ? 40 : 'auto'
         }}
         onClick={() => setIsModalOpen(true)}
-        className="flex flex-col items-center justify-center cursor-pointer hover:scale-110 
-          shadow-lg hover:shadow-xl"
       >
         <div className="flex items-center gap-1 mb-1">
           <img 
@@ -167,10 +166,10 @@ const LoanBubble = ({
             className="w-5 h-5 rounded-full"
           />
         </div>
-        <div className="text-white text-xs font-medium">
-          {isPricesLoading ? '...' : `${calculatedRatio}%`}
+        <div className="text-white text-sm md:text-base font-medium">
+          {(interest / 100).toFixed(2)}%
         </div>
-        <div className="text-gray-400 text-[10px]">Ratio</div>
+        <div className="text-gray-300 text-xs">Interest</div>
       </div>
 
       {isModalOpen && createPortal(
