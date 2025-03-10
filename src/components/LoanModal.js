@@ -52,6 +52,7 @@ const LoanModal = ({
   const { signer } = useWallet()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [isTooltipVisible, setIsTooltipVisible] = useState(false);
 
   const displayTokenAmount = formatNumber(loan.tokenAmount / Math.pow(10, getTokenInfo(loan.tokenRequested).decimals))
   const displayCollateralAmount = formatNumber(loan.collateralAmount / Math.pow(10, getTokenInfo(loan.collateralToken).decimals))
@@ -506,7 +507,7 @@ const LoanModal = ({
                 <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-3 md:p-4">
                   {loan.acceptedAt === loan.createdAt ? (
                   <>
-                  <span className="text-xs text-gray-400 block mb-1">Duration</span>
+                  <span className="text-xs text-gray-400 block mb-1">Term</span>
                   <span className="font-medium">
                     {(() => {
                       const minutes = loan.duration / (60 * 1000);
@@ -531,9 +532,48 @@ const LoanModal = ({
                 )}
                 </div>
                 <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-3 md:p-4">
-                  <span className="text-xs md:text-sm text-gray-400 block mb-1">APR</span>
-                  <span className="text-base md:text-lg font-medium text-green-400">
+                  <span className="text-xs md:text-sm text-gray-400 block mb-1">Interest</span>
+                  <span className="text-base md:text-lg font-medium text-green-400 flex items-center">
                     {(loan.interest / 100).toFixed(2)}%
+                    <div className="relative">
+                      <span 
+                        className="ml-2 text-xs text-gray-300 bg-gray-700 rounded-full w-5 h-5 flex items-center justify-center cursor-help"
+                        onMouseEnter={() => setIsTooltipVisible(true)}
+                        onMouseLeave={() => setIsTooltipVisible(false)}
+                      >
+                        i
+                      </span>
+                      {isTooltipVisible && (
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-4 py-3 bg-gray-800 text-white text-xs rounded-md shadow-lg z-10 min-w-[200px]">
+                          <div className="font-medium text-gray-300 mb-2">Interest Value</div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <img 
+                                src={getTokenInfo(loan.tokenRequested).logoURI} 
+                                alt={getTokenInfo(loan.tokenRequested).symbol}
+                                className="w-5 h-5 mr-2 rounded-full"
+                              />
+                              <span className="font-medium">
+                                {formatNumber((loan.tokenAmount / Math.pow(10, getTokenInfo(loan.tokenRequested).decimals)) * (loan.interest / 10000))} {getTokenInfo(loan.tokenRequested).symbol}
+                              </span>
+                            </div>
+                            {!isPricesLoading && tokenPrices[loan.tokenRequested] && (
+                              <span className="text-gray-400 ml-2">
+                                ≈ ${formatNumber(((loan.tokenAmount / Math.pow(10, getTokenInfo(loan.tokenRequested).decimals)) * (loan.interest / 10000)) * tokenPrices[loan.tokenRequested])}
+                              </span>
+                            )}
+                          </div>
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-8 border-transparent border-t-gray-800"></div>
+                        </div>
+                      )}
+                    </div>
+                  </span>
+                  <span className="text-xs text-gray-500 block mt-1">
+                    APR: {(() => {
+                      const durationInYears = parseInt(loan.duration) / (365 * 24 * 60 * 60 * 1000);
+                      const apr = (loan.interest / 100) * (1 / durationInYears);
+                      return apr.toFixed(2) + '%';
+                    })()}
                   </span>
                 </div>
                 <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-3 md:p-4">

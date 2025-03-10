@@ -63,7 +63,7 @@ const Terminal = () => {
         const activeLoans = data.loans.filter(loan => loan.active);
         const totalLoans = data.loans.length;
         
-        const avgApr = allLoans.length > 0
+        const avgInterest = allLoans.length > 0
           ? allLoans.reduce((sum, loan) => sum + (Number(loan.interest) / 10000), 0) / allLoans.length * 100
           : 0;
 
@@ -99,7 +99,7 @@ const Terminal = () => {
           setStats({
             activeLoans: activeLoans.length,
             totalLoans,
-            avgApr,
+            avgInterest,
             avgCollateralRatio: loansWithRatio > 0 ? totalCollateralRatio / loansWithRatio : 0,
             tvlUSD
           });
@@ -139,7 +139,7 @@ const Terminal = () => {
     { text: "Initializing AlpacaFi protocol...", delay: 0.2, color: "text-gray-500" },
     { text: `Total Value Locked: $${formatNumber(stats?.tvlUSD)}`, delay: 0.4, color: "text-white" },
     { text: `Active/Total Loans: ${stats?.activeLoans || '...'}/${stats?.totalLoans || '...'}`, delay: 0.6, color: "text-white" },
-    { text: `Average APR: ${stats?.avgApr ? formatNumber(stats.avgApr) : '...'}%`, delay: 0.8, color: "text-white" },
+    { text: `Average Interest: ${stats?.avgInterest ? formatNumber(stats.avgInterest) : '...'}%`, delay: 0.8, color: "text-white" },
     { text: `Average Collateral Ratio: ${stats?.avgCollateralRatio ? formatNumber(stats.avgCollateralRatio) : '...'}%`, delay: 1, color: "text-white" },
     { command: "$ npm run network-info", delay: 1.2 },
     { text: `Block Height: #${formattedBlockHeight}`, delay: 1.4, color: "text-white" },
