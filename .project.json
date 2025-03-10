@@ -1,5 +1,5 @@
 {
-  "fullNodeVersion": "v3.11.2",
+  "fullNodeVersion": "v3.11.1",
   "compilerOptionsUsed": {
     "ignoreUnusedConstantsWarnings": true,
     "ignoreUnusedVariablesWarnings": true,
@@ -144,13 +144,13 @@
       "codeHashDebug": ""
     },
     "IFungibleToken": {
-      "sourceFile": "../../../../../tmp/bunx-1000-@alephium/cli@latest/node_modules/@alephium/web3/std/fungible_token_interface.ral",
+      "sourceFile": "../node_modules/@alephium/web3/std/fungible_token_interface.ral",
       "sourceCodeHash": "62910bf11e1eeb6cb2fd468626ff606a9b06306b2b81590c3b10f6deb5966bde",
       "bytecodeDebugPatch": "",
       "codeHashDebug": ""
     },
     "INFT": {
-      "sourceFile": "../../../../../tmp/bunx-1000-@alephium/cli@latest/node_modules/@alephium/web3/std/nft_interface.ral",
+      "sourceFile": "../node_modules/@alephium/web3/std/nft_interface.ral",
       "sourceCodeHash": "92956f4e61c198f011b48dbda2ed76193ffc79ac9c39f60bf1763a34e02f2c41",
       "bytecodeDebugPatch": "",
       "codeHashDebug": ""
@@ -214,6 +214,12 @@
       "sourceCodeHash": "fe9ff487a01a74e0738628e02773e12ce52a74ebfa791ba45925e3dbf5f30abe",
       "bytecodeDebugPatch": "",
       "codeHashDebug": "0a9ace41598c44188bf5ed4afe1528e5c21da991df7c76f8ed742bad80f73110"
+    },
+    "PriceFetcher": {
+      "sourceFile": "oracle/price_fetcher.ral",
+      "sourceCodeHash": "27fa529e0f3e4cce707cde314b65f43a8df49ea36d9f9b1c43643c216a079902",
+      "bytecodeDebugPatch": "",
+      "codeHashDebug": "645783c74cf42cd5988ccee598d40818f10b8a7d8c1cb092cbdd7ecdcd99065f"
     },
     "Redeem": {
       "sourceFile": "auctions/auction_factory.ral",

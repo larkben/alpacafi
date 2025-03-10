@@ -10,5 +10,6 @@ export * from "./Fee";
 export * from "./Loan";
 export * from "./LoanFactory";
 export * from "./Pool";
+export * from "./PriceFetcher";
 export * from "./TokenTest";
 export * from "./scripts";
