@@ -1,290 +1,59 @@
-// need to also add fee router similar to alpacafi p2p lending
-
-Contract PoolFactory (
-    admin: Address,
-    poolTemplate: ByteVec,
-    alpacaPoolTemplate: ByteVec,
-    comissionRate: U256,
-    // only in test ~ mainnet would have DIA and ALPACA
-    alpaca: ByteVec
+Contract LendingPoolFactory (
+	admin: Address,
+	feeTemplate: ByteVec,
+	lendingPoolTemplate: ByteVec,
+	lendingAsset: ByteVec,
+	fee: U256,
+	oracle: IDIAOracle,
+	alpaca: ByteVec		// possibly address
 ) {
+	// determine collateral ratio function
+	
+	// determine collateral amount needed function
+	
+	// mapping(s) | token support | fee support
+		// implement
+		
+	// create lending pool
+	
+	// -----------------------
+	
+	// update admin
+	
+	// update fee
+	
+	// upgrade functions
+}
 
-    mapping [ByteVec, PairInfo] tokenPairs
+struct Tokens {
+	lendingAssetAcc: ByteVec,
+	mut maxLend: U256,
+	mut lendingRate: U256
+}
 
-    event Deposit (
-        who: Address,
-        pair: ByteVec,
-        token: ByteVec,
-        amount: U256
-    )
-    event Withdraw (
-        who: Address,
-        pair: ByteVec,
-        token: ByteVec,
-        amount: U256
-    )
-    event CollateralAdded (
-        who: Address,
-        pair: ByteVec,
-        collateral: ByteVec,
-        amount: U256
-    )
-    event Borrow (
-        who: Address, 
-        pair: ByteVec,
-        path: ByteVec,
-        token: ByteVec, 
-        amount: U256
-    )
-    //event Repay (
-    //    who: Address,
-    //    pair: ByteVec,
-    //    path: ByteVec,
-    //    remaining: U256,
-    //    token: ByteVec,
-    //    amount: U256
-    //)
-    event Liquidate (
-        who: Address,
-        pair: ByteVec,
-        collateral: ByteVec,
-        collateralAmount: U256,
-        token: ByteVec,
-        tokenAmount: U256,
-        timeToEnd: U256,
-        auction: ByteVec
-    )
+Contract LendingPool (
+	owner: Address,
+	lendingAsset: ByteVec, // this is an asset storage contract
+	debtTemplate: ByteVec,
+	loansActive: U256,
+	// params
+	maxTime: U256,
+) {
+	mapping [ByteVec, ByteVec] tokens
+	// max tokens per loan defined in mapping -> create struct [X]
+	
+	
+}
 
-    // create pool
-    // .. code event
+// Asset Storage Contract
 
-    // collateral
-    pub fn getOracleForToken(collateralToken: ByteVec) -> Bool {
-        let oracle = tokenPairs[collateralToken].oracle
-
-        return oracle
-    }
-    
-    pub fn determineCollateralRatio(
-        tokenRequested: ByteVec,
-        tokenAmount: U256,
-        tokenOracle: Bool,
-        collateralToken: ByteVec, 
-        collateralAmount: U256,
-        collateralOracle: Bool,
-        threshhold: U256
-    ) -> (U256, Bool) {
-        if (tokenPairs.contains!(tokenRequested) == true && tokenPairs.contains!(collateralToken)) {
-            let mut loanValue = 0
-            let mut collateralValue = 0
-
-            // fetch token price
-            if (tokenOracle) {
-                loanValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[tokenRequested].pair).value
-            }
-            else {
-                loanValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[tokenRequested].pair).value
-            }
-
-            // fetch collateral price
-            if (collateralOracle) {
-                collateralValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[collateralToken].pair).value
-            }
-            else {
-                collateralValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[collateralToken].pair).value
-            }
-
-            if (loanValue == 0 || collateralValue == 0) {
-                return 0, false
-            }
-
-            let collateralDecimals = tokenPairs[collateralToken].decimals
-            let tokenDecimals = tokenPairs[tokenRequested].decimals
-
-            // Normalize collateral amount to 18 decimals
-            let collateralNormalized = (collateralAmount * (10 |**| 18)) / (10 |**| collateralDecimals)
-            let collateralValueUSD = (collateralNormalized * collateralValue) / (10 |**| 8) // Remove 8 decimals
-
-            // Normalize loan amount to 18 decimals
-            let loanNormalized = (tokenAmount * (10 |**| 18)) / (10 |**| tokenDecimals)
-            let loanValueUSD = (loanNormalized * loanValue) / (10 |**| 8) // Remove 8 decimals
-
-            // Compute collateral-to-loan ratio in basis points (10000 = 100%)
-            let ratio = (collateralValueUSD * 10000) / loanValueUSD // Multiply before division to avoid precision loss
-
-            if (ratio > threshhold) {
-                return ratio, true
-            }
-
-            else {
-                return ratio, false
-            }
-        }
-
-        return 0, false
-    }
-
-    @using(checkExternalCaller = false) 
-    pub fn determineCollateralAmount(
-        tokenRequested: ByteVec,
-        tokenAmount: U256,
-        tokenOracle: Bool,
-        collateralToken: ByteVec,
-        collateralOracle: Bool,
-        desiredRatio: U256
-    ) -> (U256) {
-        // validate this tokens are mapped
-        assert!(tokenPairs.contains!(tokenRequested) == true && tokenPairs.contains!(collateralToken), 0)
-
-        // declaration
-        let mut loanValue = 0
-        let mut collateralValue = 0
-
-        // fetch token price
-        if (tokenOracle) {
-            loanValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[tokenRequested].pair).value
-        }
-        else {
-            loanValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[tokenRequested].pair).value
-        }
-
-        // fetch collateral price
-        if (collateralOracle) {
-            collateralValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[collateralToken].pair).value
-        }
-        else {
-            collateralValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[collateralToken].pair).value
-        }
-
-        let collateralDecimals = tokenPairs[collateralToken].decimals
-        let tokenDecimals = tokenPairs[tokenRequested].decimals
-
-        // collateral required should never be zero
-
-        let loanNormalized = (tokenAmount * (10 |**| 18)) / (10 |**| tokenDecimals)
-        let loanValueUSD = (loanNormalized * loanValue) / (10 |**| 8)
-
-        let requiredCollateralUSD = (loanValueUSD * desiredRatio) / 10000
-
-        let collateralNormalized = (requiredCollateralUSD * (10 |**| 8)) / collateralValue
-        let requiredCollateralAmount = (collateralNormalized * (10 |**| collateralDecimals)) / (10 |**| 18)
-
-        return requiredCollateralAmount
-    }
-
-    // deposit
-    @using(checkExternalCaller = false, preapprovedAssets = true, assetsInContract = enforced, updateFields = true)
-    pub fn deposit(pair: ByteVec, amount: U256) -> () {
-        let pool = Pool(subContractId!(pair))
-
-        let caller = callerAddress!()
-
-        let token = pool.getPoolToken()
-
-        pool.deposit{caller -> token: amount}(caller, amount)
-
-        // sTokens recieved
-        emit Deposit(
-            caller, 
-            pair, 
-            token, 
-            amount
-        )
-    }
-
-    // withdraw
-    @using(checkExternalCaller = false, preapprovedAssets = true, assetsInContract = enforced, updateFields = true)
-    pub fn withdraw(pair: ByteVec, amount: U256) -> () {
-        let pool = Pool(subContractId!(pair))
-
-        let caller = callerAddress!()
-
-        let token = pool.getSPoolToken()
-
-        //! this will need to be edited  
-        pool.withdraw{callerAddress!() -> token: amount}(caller, amount)
-
-        // token recieved
-        emit Withdraw(
-            caller, 
-            pair, 
-            token, 
-            amount
-        )
-    }
-
-    // borrow -> borrow (create loan + mapping)
-    @using(checkExternalCaller = false, preapprovedAssets = true, assetsInContract = enforced, updateFields = true)
-    pub fn borrow(pair: ByteVec, collateralToken: ByteVec, amountRequest: U256) -> () {
-        let pool = Pool(subContractId!(pair))
-
-        let caller = callerAddress!()
-        let time = blockTimeStamp!()
-
-        // get token
-        let collateral = pool.getPoolToken()
-
-        // calculate collateral required for loan
-        let amountNeeded = determineCollateralAmount()
-
-        // approves the collateral to be locked
-        pool.borrow{callerAddress!() -> collateral: amountNeeded}(caller, collateralToken, amountRequest, encodeToByteVec!(caller, time))
-
-        emit Borrow(
-            caller,
-            pair,
-            encodeToByteVec!(caller, time),
-            collateral,
-            amount
-        )
-    }
-
-    // repay
-    @using(checkExternalCaller = false, preapprovedAssets = true, assetsInContract = false, updateFields = true)
-    pub fn repay(pair: ByteVec, path: ByteVec, amount: U256) -> () {
-        let pool = Pool(subContractId!(pair))
-
-        let caller = callerAddress!()
-
-        let token = pool.getPoolToken()
-
-        // calculate repayment
-        // .. code
-
-        pool.repay{caller -> token: amount}(caller, path)
-
-        //emit Repay (
-        //    caller,
-        //    pair,
-        //    path,
-        //    remaining,
-        //    token,
-        //    amount
-        //)
-    }
-
-    // the liquidator should pay back the loan principal to recieve discounted collateral
-    @using(checkExternalCaller = false, preapprovedAssets = false, assetsInContract = enforced, updateFields = true)
-    pub fn liquidate(pair: ByteVec, path: ByteVec) -> () {
-        let pool = Pool(subContractId!(pair))
-
-        let caller = callerAddress!()
-
-        // get pool tokens
-        let token = pool.getPoolToken()
-
-        // ! might need to add return values for event logging
-        pool.liquidate(path)
-
-        //emit Liquidate (
-        //    caller,
-        //    pair,
-        //    collateral,
-        //    collateralAmount,
-        //    token,
-        //    tokenAmount,
-        //    timeToEnd,
-        //    auction
-        //)
-    }
+Contract LendingAsset (
+	parent: Address,
+	amount: U256
+) {
+	// fund loan request
+	
+	// topup
+	
+	// withdraw
 }
