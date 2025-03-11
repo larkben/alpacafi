@@ -10,10 +10,12 @@ Contract LendingPool (
 	debtTemplate: ByteVec,
 	loansActive: U256,
 	// params
-	maxTime: U256,
+	maxTime: U256
 ) {
 	mapping [ByteVec, ByteVec] tokens
 	// max tokens per loan
 	
-	
+	pub fn lend() -> () {
+        
+    }
 }
