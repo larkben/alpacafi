@@ -1,0 +1,39 @@
+// Asset Storage Contract
+
+Contract LendingAsset (
+	parent: Address,
+    owner: Address,
+    token: ByteVec,
+	amount: U256
+) {
+    enum AssetCodes {
+        InvalidCaller = 0
+    }
+
+    @using(preapprovedAssets = true, updateFields = true, checkExternalCaller = true)
+	pub fn lendAsset(reciever: Address, amount: U256) -> () {
+        checkCaller!(caller == parent, AssetCodes.InvalidCaller)
+
+
+    }
+	
+    @using(preapprovedAssets = false, updateFields = true, checkExternalCaller = true)
+	pub fn topupAsset() -> () {
+
+    }
+	
+    @using(preapprovedAssets = true, updateFields = true, checkExternalCaller = true)
+	pub fn withdrawAsset() -> () {
+
+    }
+
+    @using(preapprovedAssets = true, updateFields = true, checkExternalCaller = true)
+	pub fn destroyAsset() -> () {
+
+    }
+
+    // upgrade functions -> should make these good for both template and for users
+    
+}
+
+

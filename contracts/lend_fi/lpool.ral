@@ -1,0 +1,19 @@
+struct Tokens {
+	lendingAssetAcc: ByteVec,
+	mut maxLend: U256,
+	mut lendingRate: U256
+}
+
+Contract LendingPool (
+	owner: Address,
+	lendingAsset: ByteVec, // this is an asset storage contract
+	debtTemplate: ByteVec,
+	loansActive: U256,
+	// params
+	maxTime: U256,
+) {
+	mapping [ByteVec, ByteVec] tokens
+	// max tokens per loan
+	
+	
+}
