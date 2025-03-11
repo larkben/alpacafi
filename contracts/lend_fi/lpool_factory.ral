@@ -1,14 +1,18 @@
 Contract LendingPoolFactory (
-	admin: Address,
+	mut admin: Address,
 	feeTemplate: ByteVec,
 	lendingPoolTemplate: ByteVec,
 	lendingAsset: ByteVec,
 	fee: U256,
-	oracle: IDIAOracle,
+	oracle: ByteVec,
 	alpaca: ByteVec
 ) {
 	// mapping(s) | token support
 	mapping [ByteVec, PairInfo] tokens
+
+    enum LendingPoolFactoryCodes {
+        InvalidCaller = 0
+    }
 
 	fn determineCollateralRatio(
         tokenRequested: ByteVec,
@@ -19,32 +23,32 @@ Contract LendingPoolFactory (
         collateralOracle: Bool,
         threshhold: U256
     ) -> (U256, Bool) {
-        if (tokenPairs.contains!(tokenRequested) == true && tokenPairs.contains!(collateralToken)) {
+        if (tokens.contains!(tokenRequested) == true && tokens.contains!(collateralToken)) {
             let mut loanValue = 0
             let mut collateralValue = 0
 
             // fetch token price
             if (tokenOracle) {
-                loanValue = TestOracle(oracle).getValue(tokenPairs[tokenRequested].pair).value
+                loanValue = TestOracle(oracle).getValue(tokens[tokenRequested].pair).value
             }
             else {
-                loanValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[tokenRequested].pair).value
+                loanValue = AlpacaFiOracle(alpaca).getValue(tokens[tokenRequested].pair).value
             }
 
             // fetch collateral price
             if (collateralOracle) {
-                collateralValue = TestOracle(oracle).getValue(tokenPairs[collateralToken].pair).value
+                collateralValue = TestOracle(oracle).getValue(tokens[collateralToken].pair).value
             }
             else {
-                collateralValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[collateralToken].pair).value
+                collateralValue = AlpacaFiOracle(alpaca).getValue(tokens[collateralToken].pair).value
             }
 
             if (loanValue == 0 || collateralValue == 0) {
                 return 0, false
             }
 
-            let collateralDecimals = tokenPairs[collateralToken].decimals
-            let tokenDecimals = tokenPairs[tokenRequested].decimals
+            let collateralDecimals = tokens[collateralToken].decimals
+            let tokenDecimals = tokens[tokenRequested].decimals
 
             // Normalize collateral amount to 18 decimals
             let collateralNormalized = (collateralAmount * (10 |**| 18)) / (10 |**| collateralDecimals)
@@ -95,12 +99,20 @@ Contract LendingPoolFactory (
     }
 		
 	// create lending pool
+    pub fn createLendingPool() -> () {
+
+    }
 	
 	// -----------------------
 	
 	// update admin
-	
-	// update fee
+    @using(checkExternalCaller = true, updateFields = true)
+    pub fn updateLendingFactoryAdmin(newAdmin: Address) -> () {
+        checkCaller!(callerAddress!() == admin, LendingPoolFactoryCodes.InvalidCaller)
+
+        admin = newAdmin
+    }
 	
 	// upgrade functions
+    // ....
 }
