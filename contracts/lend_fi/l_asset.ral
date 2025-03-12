@@ -4,32 +4,46 @@ Contract LendingAsset (
 	parent: Address,
     owner: Address,
     token: ByteVec,
-	total: U256
+	mut total: U256
 ) {
     enum AssetCodes {
         InvalidCaller = 0
     }
 
-    @using(preapprovedAssets = true, updateFields = true, checkExternalCaller = true)
+    @using(preapprovedAssets = false, updateFields = true, checkExternalCaller = true, assetsInContract = true)
 	pub fn lendAsset(reciever: Address, amount: U256) -> () {
-        checkCaller!(caller == parent, AssetCodes.InvalidCaller)
+        checkCaller!(callerAddress!() == parent, AssetCodes.InvalidCaller)
 
+        transferToken!(selfAddress!(), reciever, token, amount)
 
-    }
-	
-    @using(preapprovedAssets = false, updateFields = true, checkExternalCaller = true)
-	pub fn topupAsset() -> () {
-
+        total = total - amount
     }
 	
     @using(preapprovedAssets = true, updateFields = true, checkExternalCaller = true)
-	pub fn withdrawAsset() -> () {
+	pub fn topupAsset(sender: Address, amount: U256) -> () {
+        checkCaller!(callerAddress!() == parent, AssetCodes.InvalidCaller)
 
+        transferToken!(sender, selfAddress!(), token, amount)
+
+        total = total - amount
+    }
+	
+    @using(preapprovedAssets = true, updateFields = true, checkExternalCaller = true)
+	pub fn withdrawAsset(amount: U256) -> () {
+        checkCaller!(callerAddress!() == parent, AssetCodes.InvalidCaller)
+
+        transferToken!(selfAddress!(), owner, token, amount)
+
+        total = total - amount
     }
 
-    @using(preapprovedAssets = true, updateFields = true, checkExternalCaller = true)
-	pub fn destroyAsset() -> () {
+    @using(preapprovedAssets = false, updateFields = true, checkExternalCaller = true, assetsInContract = true)
+	pub fn destroyAsset(caller: Address) -> () {
+        checkCaller!(callerAddress!() == parent, AssetCodes.InvalidCaller)
 
+        assert!(caller == owner, AssetCodes.InvalidCaller)
+
+        destroySelf!(owner)
     }
 
     // upgrade functions -> should make these good for both template and for users
