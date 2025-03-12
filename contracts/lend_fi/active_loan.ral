@@ -1,0 +1,11 @@
+Contract ActiveLoanTemplate (
+    parent: Address,
+    lender: Address,
+    debtor: Address,
+    interestRate: U256,
+    startTime: U256
+) {
+    // helper functions
+
+    // contract functions
+}

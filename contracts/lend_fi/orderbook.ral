@@ -1,19 +1,50 @@
-Contract LendingPoolFactory (
-	mut admin: Address,
+// these might need to be contracts
+struct LoanOffer {
+    contract: Address, 
+    lender: Address,
+    token: ByteVec,
+    amount: U256,
+    minInterestRate: U256,
+    duration: U256
+}
+
+struct LoanRequest {
+    contract: Address,   
+    borrower: Address,
+    token: ByteVec,
+    amount: U256,
+    maxInterestRate: U256,
+    duration: U256
+}
+
+struct ActiveLoan {
+    contract: Address,
+    lender: Address,
+    borrower: Address,
+    token: ByteVec,
+    amount: U256,
+    interestRate: U256,
+    duration: U256
+}
+
+Contract OrderBook (
+	admin: Address,
 	feeTemplate: ByteVec,
-	lendingPoolTemplate: ByteVec,
-	lendingAsset: ByteVec,
+	orderTemplate: ByteVec,
 	fee: U256,
 	oracle: ByteVec,
 	alpaca: ByteVec
 ) {
-	// mapping(s) | token support
-	mapping [ByteVec, PairInfo] tokens
+    mapping [U256, LoanOffer] loanOffers
+    mapping [U256, LoanRequest] loanRequests
+    mapping [Address, ActiveLoan] activeLoans
 
+    // error codes
     enum LendingPoolFactoryCodes {
         InvalidCaller = 0
     }
 
+    // collateral ratios
 	fn determineCollateralRatio(
         tokenRequested: ByteVec,
         tokenAmount: U256,
@@ -97,22 +128,15 @@ Contract LendingPoolFactory (
 
         return requiredCollateralAmount
     }
-		
-	// create lending pool
-    pub fn createLendingPool() -> () {
 
-    }
-	
-	// -----------------------
-	
-	// update admin
-    @using(checkExternalCaller = true, updateFields = true)
-    pub fn updateLendingFactoryAdmin(newAdmin: Address) -> () {
-        checkCaller!(callerAddress!() == admin, LendingPoolFactoryCodes.InvalidCaller)
+    // matching algorithm -> this needs work
+    pub fn matchLoans() -> () {
+        // if order matches offer ..
 
-        admin = newAdmin
+
+        // if order matches request .. 
+
+
+        // no match create order ...
     }
-	
-	// upgrade functions
-    // ....
 }

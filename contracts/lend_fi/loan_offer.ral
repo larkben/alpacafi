@@ -1,0 +1,11 @@
+Contract LoanOfferTemplate (
+    parent: Address,
+    lender: Address,
+    token: ByteVec,
+    amount: U256,
+    rate: U256
+) {
+    // helper functions
+
+    // contract functions
+}
