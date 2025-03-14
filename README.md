@@ -32,4 +32,5 @@ Auctions serve as the pathway to lenders and managing risk over the long term.
 | $AYIN | DIA |
 | $USDT | DIA |
 | $USDC | DIA |
+| $WBTC | DIA |
 
