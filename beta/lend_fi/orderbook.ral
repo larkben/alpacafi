@@ -35,16 +35,63 @@ Contract OrderBook (
 	oracle: ByteVec,
 	alpaca: ByteVec
 ) {
-    mapping [U256, LoanOffer] loanOffers
-    mapping [U256, LoanRequest] loanRequests
-    mapping [Address, ActiveLoan] activeLoans
+    // token | contracts
+    //! possible use subContracts and encodeToByteVec!() for further effciency
+    mapping [ByteVec, ByteVec] loanOfferIds
+    mapping [ByteVec, ByteVec] loanRequestIds
+
+    // id | struct
+    mapping [ByteVec, LoanOffer] loanOffers
+    mapping [ByteVec, LoanRequest] loanRequests
+    mapping [ByteVec, ActiveLoan] activeLoans
 
     // error codes
     enum LendingPoolFactoryCodes {
         InvalidCaller = 0
     }
 
-    // collateral ratios
+    // array manipulation
+    // ---------------------------------------------------------
+    pub fn get(array: ByteVec, index: U256) -> U256 {
+        assert!(size!(array) % 4 == 0, 0)
+
+        let offset = index * 4
+        let bytes = byteVecSlice!(array, offset, offset + 4)
+        return u256From4Byte!(bytes)
+    }
+
+    // Avoid this function because it costs more gas and creates new ByteVec.
+    pub fn update(array: ByteVec, index: U256, value: U256) -> ByteVec {
+        assert!(size!(array) % 4 == 0, 0)
+
+        let offset = index * 4
+        return byteVecSlice!(array, 0, offset) ++ u256To4Byte!(value) ++ byteVecSlice!(array, offset + 4, size!(array))
+    }
+
+    pub fn push(array: ByteVec, value: U256) -> ByteVec {
+        assert!(size!(array) % 4 == 0, 0)
+
+        return array ++ u256To4Byte!(value)
+    }
+
+    pub fn pop(array: ByteVec) -> (ByteVec, U256) {
+        assert!(size!(array) % 4 == 0, 0)
+
+        let offset = size!(array) - 4
+        let value = u256From4Byte!(byteVecSlice!(array, offset, offset + 4))
+        return byteVecSlice!(array, 0, offset), value
+    }
+
+    // * remove at specific index
+    pub fn remove(array: ByteVec, index: U256) -> (ByteVec, U256) {
+        assert!(size!(array) % 4 == 0, 0)
+        let offset = index * 4
+        let value = u256From4Byte!(byteVecSlice!(array, offset, offset + 4))
+        return byteVecSlice!(array, 0, offset) ++ byteVecSlice!(array, offset + 4, size!(array)), value
+    }
+    // ---------------------------------------------------------
+
+    // collateral ratios //! double check these
 	fn determineCollateralRatio(
         tokenRequested: ByteVec,
         tokenAmount: U256,
@@ -128,15 +175,79 @@ Contract OrderBook (
 
         return requiredCollateralAmount
     }
+    //! ----------------------------------------
 
     // matching algorithm -> this needs work
-    pub fn matchLoans() -> () {
-        // if order matches offer ..
+    pub fn matchLoans(request: Bool, token: ByteVec, amount: U256, rate: U256) -> () {
+        // if the order is to take a loan
+        if (request) {
+            //* fetch available loan offers for this token
+            let offerList = loanOfferIds[token]
+            let len = size!(offerList) / 4
+            
+            // loop over options
+            for (let mut i = 0; i < len; i = i + 1) {
 
+                //* data struct variables and declaration
+                let offerId = get(offerList, i)
+                let offer = loanOffers[offerId] // fetch the offer
+    
+                if (offer.active && offer.amount >= amount && offer.rate <= rate) {
+                    // convert offer into active loan for fulfillment
+                    let (encodeImmutableFields, encodeMutableFields) = ActiveLoanTemplate.encodeFields!(
+                        selfAddress!(),
+                        // get lender -> Offer Contract
+                        callerAddress!(),
+                        offer.amount,
+                        // determine collateral needed
+                        offer.minInterestRate,
+                        blockTimeStamp!()
+                    )
 
-        // if order matches request .. 
-
-
-        // no match create order ...
+                    activeLoans[@caller] = ActiveLoan(@caller, offer.lender, token, amount, offer.rate)
+    
+                    // Update or remove offer
+                    if (offer.amount > amount) {
+                        loanOffers[offerId].amount -= amount
+                    } else {
+                        delete loanOffers[offerId]
+                        loanOfferIds[token] = removeByIndex(loanOfferIds[token], i)  // Remove matched offer
+                    }
+                    return
+                }
+            }
+    
+            // No match found, create a new loan request
+            let orderId = createLoanRequest(token, amount, rate)
+            loanRequestIds[token] = push(loanRequestIds[token], orderId)
+        } 
+        else {
+            // Fetch available loan requests for this token
+            let requestList = loanRequestIds[token]
+            let len = size!(requestList) / 4
+    
+            for i in 0..len {
+                let requestId = get(requestList, i)
+                let req = loanRequests[requestId]
+    
+                if (req.active && req.amount <= amount && req.rate >= rate) {
+                    // Fulfill loan
+                    activeLoans[req.borrower] = ActiveLoan(req.borrower, @caller, token, req.amount, rate)
+    
+                    // Update or remove request
+                    if (req.amount < amount) {
+                        loanRequests[requestId].amount -= amount
+                    } else {
+                        delete loanRequests[requestId]
+                        loanRequestIds[token] = removeByIndex(loanRequestIds[token], i)  // Remove matched request
+                    }
+                    return
+                }
+            }
+    
+            // No match found, create a new loan offer
+            let orderId = createLoanOffer(token, amount, rate)
+            loanOfferIds[token] = push(loanOfferIds[token], orderId)
+        }
     }
 }

@@ -1,11 +1,69 @@
+struct Debts {
+    lender: Address,
+    amount: U256,
+    collateral: U256,
+    interestRate: U256,
+    time: U256
+}
+
 Contract ActiveLoanTemplate (
     parent: Address,
-    lender: Address,
     debtor: Address,
-    interestRate: U256,
-    startTime: U256
-) {
-    // helper functions
+    token: ByteVec,
+    mut debtCount: U256
+) { 
+    // mapping
+    mapping [U256, Debts] debtList
+
+    // errors
+    enum LoanError {
+        NotParent = 0
+        NotDebtor = 1
+    }
+
+    // interest formula
+    pub fn getInterest(amount: U256, time: U256, rate: U256) -> (U256) {
+        if (interest > 0) {
+            let elapsedTime = blockTimeStamp() - time
+            let gain = (amount * rate * time) / (31556926000 * 10000)
+            let flatInterest = (amount * 3) / 100  // 3% flat rate for quick loans
+    
+            return amount + gain + flatInterest
+        } else {
+            return amount
+        }
+    }
 
     // contract functions
+    @using(checkExternalCaller = true, updateFields = true)
+    pub fn addDebt(
+        caller: Address, 
+        lender: Address,
+        lendedAmount: U256,
+        rate: U256,
+        collateralAmount: U256        // collateral amount
+    ) -> () {
+        checkCaller!(callerAddress!() == parent, LoanError.NotParent)
+
+        assert!(caller == debtor, LoanError.NotDebtor)
+
+        // create the mapping
+        let b = Debts {
+            lender: lender,
+            amount: lendedAmount,
+            collateral: collateralAmount,
+            interestRate: rate,
+            time: blockTimeStamp!()
+        }
+
+        debtList.insert!(caller, debtCount, b)
+
+        // increment
+        debtCount = debtCount + 1
+    }
+
+    @using(checkExternalCaller = true, assetsInContract = true)
+    pub fn payDebt(debt: U256) -> () {
+
+    }
 }
