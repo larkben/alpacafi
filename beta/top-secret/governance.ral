@@ -4,7 +4,6 @@ struct VotingAccount {
     // .. code the rest out
 }
 
-
 Contract Governance (
     admin: Address,
 
