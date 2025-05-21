@@ -107,6 +107,12 @@
       "bytecodeDebugPatch": "",
       "codeHashDebug": "98d67b72d97568cacc7eb574f5c72b83a5ebc957bb226e74886b17d88b56784c"
     },
+    "ForLoop": {
+      "sourceFile": "test-contracts/forloop.ral",
+      "sourceCodeHash": "fd5efe54e8753af0f4253e91110654705825de18a0258e969e32169785ce0611",
+      "bytecodeDebugPatch": "",
+      "codeHashDebug": "1983fca312f9f295509368b876398db40ae2e88ea57e61e24f4679eaf134df87"
+    },
     "ForceCancel": {
       "sourceFile": "loans/loan.ral",
       "sourceCodeHash": "3d44d818ebe3c46997fe098b965d5240cf6614751debab0b8d469d34e484bd0e",
@@ -194,6 +200,12 @@
     "RemovePair": {
       "sourceFile": "oracle/price_oracle.ral",
       "sourceCodeHash": "b402f00d48d586290e505667003c482187c377cca5ef5db9f6454cb965d08b9b",
+      "bytecodeDebugPatch": "",
+      "codeHashDebug": ""
+    },
+    "TestCycle": {
+      "sourceFile": "test-contracts/forloop.ral",
+      "sourceCodeHash": "fd5efe54e8753af0f4253e91110654705825de18a0258e969e32169785ce0611",
       "bytecodeDebugPatch": "",
       "codeHashDebug": ""
     },

@@ -1,0 +1,16 @@
+Contract ForLoop (
+    mut targetValue: U256
+) {
+    @using(updateFields = true, checkExternalCaller = false, preapprovedAssets = false, assetsInContract = false)
+    pub fn cycle() -> () {
+        targetValue = txGasAmount!()
+    }
+
+    // so the goal is to see how high i can set this!!! (so 95,550 is the max with this basic for loop)
+}
+
+TxScript TestCycle (
+    contract: ForLoop
+) {
+    contract.cycle()
+}

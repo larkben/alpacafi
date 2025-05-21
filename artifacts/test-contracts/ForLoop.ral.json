@@ -1,0 +1,29 @@
+{
+  "version": "v3.14.0",
+  "name": "ForLoop",
+  "bytecode": "01010e010000000003d3de2ff30280a100",
+  "codeHash": "1983fca312f9f295509368b876398db40ae2e88ea57e61e24f4679eaf134df87",
+  "fieldsSig": {
+    "names": [
+      "targetValue"
+    ],
+    "types": [
+      "U256"
+    ],
+    "isMutable": [
+      true
+    ]
+  },
+  "eventsSig": [],
+  "functions": [
+    {
+      "name": "cycle",
+      "paramNames": [],
+      "paramTypes": [],
+      "paramIsMutable": [],
+      "returnTypes": []
+    }
+  ],
+  "constants": [],
+  "enums": []
+}

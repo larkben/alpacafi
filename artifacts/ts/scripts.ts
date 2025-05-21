@@ -32,6 +32,7 @@ import { default as PayLoanScriptJson } from "../loans/PayLoan.ral.json";
 import { default as RedeemScriptJson } from "../auctions/Redeem.ral.json";
 import { default as RemoveCollateralScriptJson } from "../loans/RemoveCollateral.ral.json";
 import { default as RemovePairScriptJson } from "../oracle/RemovePair.ral.json";
+import { default as TestCycleScriptJson } from "../test-contracts/TestCycle.ral.json";
 import { default as TokenMappingScriptJson } from "../loans/TokenMapping.ral.json";
 import { default as UpdateAuctionCodeScriptJson } from "../auctions/UpdateAuctionCode.ral.json";
 import { default as UpdateAuctionFactoryCodeScriptJson } from "../auctions/UpdateAuctionFactoryCode.ral.json";
@@ -211,6 +212,11 @@ export const RemovePair = new ExecutableScript<{
   pair: HexString;
 }>(
   Script.fromJson(RemovePairScriptJson, "", AllStructs),
+  getContractByCodeHash
+);
+
+export const TestCycle = new ExecutableScript<{ contract: HexString }>(
+  Script.fromJson(TestCycleScriptJson, "", AllStructs),
   getContractByCodeHash
 );
 
