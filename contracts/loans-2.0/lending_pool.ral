@@ -1,0 +1,139 @@
+Contract LendingPool (
+    poolFactory: LendingPoolFactory,
+    token: ByteVec,
+    mut feesGenerated: U256,
+    mut amountToLend: U256,
+    mut totalLended: U256,
+    mut lastUpdateTime: U256
+) {
+    mapping [ByteVec, LendPosition] lendPositions
+    mapping [ByteVec, DebtPosition] debtPositions
+
+    // periodically every 8 hours debts will pay lenders
+    event LendPositionCreated(lender: ByteVec, amount: U256)
+    event DebtPositionCreated(borrower: ByteVec, amount: U256)
+    event FeesCollected(totalFees: U256, timestamp: U256)
+    event LendPositionClosed(lender: ByteVec, amount: U256)
+    event DebtPositionClosed(borrower: ByteVec, amount: U256)
+    
+    // 8 hours in milliseconds
+    const FEE_COLLECTION_INTERVAL = 28800000
+
+    // 0.1% fee (1/1000)
+    const FEE_RATE_NUMERATOR = 1
+    const FEE_RATE_DENOMINATOR = 1000
+    
+    @using(preapprovedAssets = true, assetsInContract = true)
+    pub fn lend(amount: U256) -> () {
+        assert!(amount > 0, ErrorCodes.InvalidAmount)
+        
+        let caller = callerAddress!()
+        
+        // Transfer tokens to contract from nft
+        
+        // Update or create lend position
+        if (lendPositions.contains!(caller)) {
+            let mut position = lendPositions[caller]
+            position.lendedAmount = position.lendedAmount + amount
+            lendPositions[caller] = position
+        } else {
+            lendPositions[caller] = LendPosition {
+                contract: selfAddress!(),
+                lendedAmount: amount,
+                timeEntered: blockTimeStamp!()
+            }
+        }
+        
+        // Update global state
+        amountToLend = amountToLend + amount
+        totalLended = totalLended + amount
+        
+        emit LendPositionCreated(caller, amount)
+    }
+    
+    @using(preapprovedAssets = true, assetsInContract = true)
+    pub fn borrow(amount: U256) -> () {
+        assert!(amount > 0, ErrorCodes.InvalidAmount)
+        assert!(amount <= amountToLend, ErrorCodes.InsufficientLiquidity)
+        
+        let caller = callerAddress!()
+        
+        // Update or create debt position
+        if (debtPositions.contains!(caller)) {
+            let mut position = debtPositions[caller]
+            position.debtAmount = position.debtAmount + amount
+            debtPositions[caller] = position
+        } else {
+            debtPositions[caller] = DebtPosition {
+                contract: selfAddress!(),
+                debtAmount: amount,
+                timeEntered: blockTimeStamp!()
+            }
+        }
+        
+        // Update global state
+        amountToLend = amountToLend - amount
+        totalDebtAmount = totalDebtAmount + amount
+        
+        // Transfer tokens to borrower
+        
+        emit DebtPositionCreated(caller, amount)
+    }
+    
+    @using(preapprovedAssets = true, assetsInContract = true)
+    pub fn repayDebt(amount: U256) -> () {
+        assert!(amount > 0, ErrorCodes.InvalidAmount)
+        
+        let caller = callerAddress!()
+        assert!(debtPositions.contains!(caller), ErrorCodes.NoDebtPosition)
+        
+        let mut position = debtPositions[caller]
+        assert!(amount <= position.debtAmount, ErrorCodes.ExcessiveRepayment)
+        
+        // Transfer repayment to contract
+        transferTokenToSelf!(caller, token, amount)
+        
+        // Update debt position
+        position.debtAmount = position.debtAmount - amount
+        if (position.debtAmount == 0) {
+            debtPositions.remove!(caller)
+        } else {
+            debtPositions[caller] = position
+        }
+        
+        // Update global state
+        amountToLend = amountToLend + amount
+        totalDebtAmount = totalDebtAmount - amount
+        
+        emit DebtPositionClosed(caller, amount)
+    }
+    
+    @using(preapprovedAssets = true, assetsInContract = true)
+    pub fn withdrawLend(amount: U256) -> () {
+        assert!(amount > 0, ErrorCodes.InvalidAmount)
+        
+        let caller = callerAddress!()
+        assert!(lendPositions.contains!(caller), ErrorCodes.NoLendPosition)
+        
+        let mut position = lendPositions[caller]
+        assert!(amount <= position.lendedAmount, ErrorCodes.InsufficientLendPosition)
+        assert!(amount <= amountToLend, ErrorCodes.InsufficientLiquidity)
+        
+        // Update lend position
+        position.lendedAmount = position.lendedAmount - amount
+        if (position.lendedAmount == 0) {
+            lendPositions.remove!(caller)
+        } else {
+            lendPositions[caller] = position
+        }
+        
+        // Update global state
+        amountToLend = amountToLend - amount
+        totalLended = totalLended - amount
+        
+        // Transfer tokens back to lender
+        transferTokenFromSelf!(caller, token, amount)
+        
+        emit LendPositionClosed(caller, amount)
+    }
+}

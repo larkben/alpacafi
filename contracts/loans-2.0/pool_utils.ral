@@ -1,0 +1,25 @@
+// pool utils
+
+enum ErrorCodes {
+    InvalidAmount = 0
+    InsufficientLiquidity = 1
+    NoDebtPosition = 2
+    NoLendPosition = 3
+    ExcessiveRepayment = 4
+    InsufficientLendPosition = 5
+    FeesNotReady = 6
+    NoDebtToCharge = 7
+    NoLendersToReward = 8
+}
+
+struct LendPosition {
+    contract: ByteVec,
+    mut lendedAmount: U256,
+    timeEntered: U256
+}
+
+struct DebtPosition {
+    contract: ByteVec,
+    mut debtAmount: U256,
+    timeEntered: U256
+}

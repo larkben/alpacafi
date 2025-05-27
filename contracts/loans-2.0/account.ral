@@ -1,0 +1,34 @@
+import "std/nft_interface"
+
+// NFT to represent loan account (lender and borrower)
+
+Contract Account(
+    tokenUri: ByteVec,
+    collectionId: ByteVec,
+    nftIndex: U256,
+    // token storage
+    tokenTemplate: ByteVec
+)implements INFT {
+
+  // --------------------
+  // INFT METHODS
+  // --------------------
+
+  pub fn getTokenUri() -> ByteVec {
+    return tokenUri
+  }
+
+  pub fn getNFTIndex() -> U256 {
+    return nftIndex
+  }
+
+  pub fn getCollectionIndex() -> (ByteVec, U256) {
+    return collectionId, nftIndex
+  }
+
+  // --------------------
+  // GET METHODS
+  // --------------------
+
+
+}

@@ -1,0 +1,37 @@
+Contract LendingPoolFactory (
+    admin: Address,
+    lendingPoolTemplate: ByteVec,
+    mut fee: U256,
+    // nft | account
+    accountTemplate: ByteVec,
+    tokenTemplate: ByteVec
+) {
+
+    // create pool
+    pub fn create() -> () {
+        // admin only
+    }
+
+    // borrow
+    pub fn borrow() -> () {
+        // calls the nft
+
+        // funds sent to caller
+
+        // funds subtracted from nft
+    }
+
+    // lend
+    pub fn lend() -> () {
+        // calls the nft
+
+        // takes funds from nft
+
+        // creates mapping to represent interest / stake
+    }
+
+    // liquidate
+    pub fn liquidate() -> () {
+        // checks the user token position, if undercollateralized user position goes up for auction
+    }
+}

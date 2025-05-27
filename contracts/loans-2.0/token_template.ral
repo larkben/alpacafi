@@ -1,0 +1,35 @@
+// storage for tokens
+
+Contract TokenTemplate (
+    nft: ByteVec,
+    token: ByteVec,
+    mut amount: U256,
+    // lended out
+    mut lent: U256,
+    mut borrowed: U256
+) {
+    // withdraw
+    pub fn withdraw(size: U256) -> () {
+        assert!(size <= amount, 0)
+    }
+
+    // deposit
+    pub fn deposit(size: U256) -> () {
+        amount = amount + size
+    }
+
+    // borrow against
+    // 125% minimum collateralization
+    pub fn borrow(size: U256) -> () {
+        borrowed = borrowed + size
+    }
+
+    // lend out
+    pub fn lend(size: U256) -> () {
+        lent = lent + size
+    }
+
+    pub fn claimRewards(size: U256) -> () {
+
+    }
+}
