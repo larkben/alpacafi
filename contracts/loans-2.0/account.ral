@@ -93,7 +93,7 @@ Contract Account(
     storage.withdraw(caller, amount)
   }
 
-  // against - the token being borrowed against and the amount
+  // borrow against a held token
   pub fn borrow(desired: ByteVec, desiredAmount: U256, collateral: ByteVec) -> () {
     let caller = callerAddress!()
 
@@ -107,9 +107,7 @@ Contract Account(
 
     let storage = TokenTemplate(id)
 
-    // check pool collateral ratio
-    let ratio = LendingPoolFactory(lendingFactoryPool).getRatio(desired ++ collateral)
-
-    storage.borrow(desired, desiredAmount)
+    // call the borrow function on the asset storage contract
+    storage.borrow(lendingFactoryPool, desired ++ collateral, desired, desiredAmount)
   }
 }

@@ -104,25 +104,36 @@ Contract LendingPool (
         assert!(amount > 0, ErrorCodes.InvalidAmount)
         assert!(amount <= amountToLend, ErrorCodes.InsufficientLiquidity)
         
-        // Collect funding rate before state changes
+        // collect funding rate before state changes
         collectFundingRate()
         
         let caller = callerAddress!()
+
+        // validate collateral needed
+        let (collateralAmount, valid) = LendingPoolFactory(poolFactory).collateralNeeded(
+            lendToken,
+            amount,
+            collateralToken,
+            15000               // 150%
+        )
+
+        // collect collateral
+        transferToken!(caller, selfAddress!(), collateralToken, collateralAmount)
         
         // Update or create debt position
-        if (debtPositions.contains!(caller)) {
-            let mut position = debtPositions[caller]
+        if (debtPositions.contains!(account)) {
+            let mut position = debtPositions[account]
             position.debtAmount = position.debtAmount + amount
-            debtPositions[caller] = position
+            debtPositions[account] = position
         } else {
-            debtPositions[caller] = DebtPosition {
+            debtPositions[account] = DebtPosition {
                 contract: selfAddress!(),
                 debtAmount: amount,
                 timeEntered: blockTimeStamp!()
             }
         }
         
-        // Update global state
+        // update global state
         amountToLend = amountToLend - amount
         totalDebtAmount = totalDebtAmount + amount
         
@@ -132,6 +143,7 @@ Contract LendingPool (
         emit DebtPositionCreated(caller, amount)
     }
     
+    //! need to work on this
     @using(preapprovedAssets = true, assetsInContract = true, updateFields = true)
     pub fn repayDebt(account: ByteVec, caller: Address, amount: U256) -> () {
         assert!(amount > 0, ErrorCodes.InvalidAmount)
@@ -163,6 +175,9 @@ Contract LendingPool (
         emit DebtPositionClosed(caller, amount)
     }
     
+    //! need to work on this
+    //? this should allow the user to withdraw rewards from current lend token ratio 
+    //?     relative to rewards earned from funding rate and protocol fees
     @using(preapprovedAssets = true, assetsInContract = true, updateFields = true)
     pub fn withdrawLend(account: ByteVec, caller: Address, amount: U256) -> () {
         assert!(amount > 0, ErrorCodes.InvalidAmount)
@@ -196,12 +211,14 @@ Contract LendingPool (
     }
 
     // Public function to manually trigger funding rate collection
+    // ? this is fine -> possibly pointless but fine
     @using(updateFields = true)
     pub fn triggerFundingRateCollection() -> () {
         collectFundingRate()
     }
 
     // View function to calculate pending funding fees without collecting
+    //? prenotion to fees about to be accrued
     pub fn getPendingFundingFees() -> U256 {
         if (totalDebtAmount == 0) {
             return 0

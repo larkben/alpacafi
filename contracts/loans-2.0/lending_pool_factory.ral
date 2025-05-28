@@ -67,16 +67,15 @@ Contract LendingPoolFactory (
         return LendingPool(subContractId!(path)).getRatio()
     }
 
-    pub fn collateralNeeded(token: ByteVec, desired: U256) -> (U256) {
+    pub fn collateralNeeded(lToken: ByteVec, dToken: ByteVec, desired: U256) -> (U256) {
 
-        let coin = tokens[token]
-
-        return LendingHelper(lendingHelper).determineCollateralAmount(
-            coin.pair,
-            coin.decimals,
+        return LendingHelper(lendingHelper).determineCollateralAmountWithMapping(
+            lToken,
             desired,
-            15000                                                // 150% collateral ratio
+            dToken,
+            15000       // 150% ratio
         )
+        
     }
 
     // create pool

@@ -1,4 +1,4 @@
-// pool utils
+// lending pool utils
 
 enum ErrorCodes {
     InvalidAmount = 0
@@ -23,3 +23,8 @@ struct DebtPosition {
     mut debtAmount: U256,
     timeEntered: U256
 }
+
+// notes / todo items
+
+// still need a way to liquidate debt position mappings as collateral is consumed by the funding rate
+// is it right or do I need anything else to add to my collateral give the funding rate depreciation?

@@ -35,12 +35,20 @@ Contract TokenTemplate (
     }
 
     // borrow against
-    pub fn borrow(poolf: ByteVec, pool: ByteVec, want: U256) -> () {
+    pub fn borrow(poolf: ByteVec, pool: ByteVec, desired: ByteVec, want: U256) -> () {
 
         // perform required collateral checks
-        LendingPoolFactory(poolf).
+        let (required, valid) = LendingPoolFactory(poolf).collateralNeeded(
+            desired, 
+            want, 
+            token, 
+            15000
+        )
+
+        assert!(valid == true, 0)
 
         // call the function for borrow from lending pool
+        LendingPool(pool).borrow(nft, selfAddress!(), want)
     }
 
     // lend out
