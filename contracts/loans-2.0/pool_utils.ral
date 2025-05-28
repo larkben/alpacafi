@@ -13,15 +13,15 @@ enum ErrorCodes {
 }
 
 struct LendPosition {
-    contract: ByteVec,
+    mut contract: ByteVec,
     mut lendedAmount: U256,
-    timeEntered: U256
+    mut timeEntered: U256
 }
 
 struct DebtPosition {
-    contract: ByteVec,
+    mut contract: ByteVec,
     mut debtAmount: U256,
-    timeEntered: U256
+    mut timeEntered: U256
 }
 
 // notes / todo items

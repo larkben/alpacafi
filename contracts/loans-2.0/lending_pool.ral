@@ -68,13 +68,13 @@ Contract LendingPool (
     }
     
     @using(preapprovedAssets = true, assetsInContract = true, updateFields = true)
-    pub fn lend(account: ByteVec, caller: Address, amount: U256) -> () {
+    pub fn lend(account: ByteVec, user: Address, caller: Address, amount: U256) -> () {
         assert!(amount > 0, ErrorCodes.InvalidAmount)
         
         // Collect funding rate before state changes
+        //! total debt * 0.01% funding rate every 8 hours and should be calculated every time function it called proprtional
+        //! to how much of the 8 hours has passed, should take totalDebt * (timepassed * 0.1%) and add to fees accrued
         collectFundingRate()
-        
-        let caller = callerAddress!()
         
         // Transfer tokens to contract from caller
         transferTokenToSelf!(caller, lendToken, amount)
@@ -85,11 +85,14 @@ Contract LendingPool (
             position.lendedAmount = position.lendedAmount + amount
             lendPositions[account] = position
         } else {
-            lendPositions[account] = LendPosition {
+            let temp = LendPosition {
                 contract: selfAddress!(),
                 lendedAmount: amount,
                 timeEntered: blockTimeStamp!()
             }
+
+            //! mapping needs to be posted from user
+            lendPositions.insert!(user, account)
         }
         
         // Update global state

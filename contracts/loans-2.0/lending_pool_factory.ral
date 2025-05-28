@@ -63,11 +63,7 @@ Contract LendingPoolFactory (
         return subContractId!(tokenLend ++ tokenCollateral)
     }
 
-    pub fn getRatio(path: ByteVec) -> () {
-        return LendingPool(subContractId!(path)).getRatio()
-    }
-
-    pub fn collateralNeeded(lToken: ByteVec, dToken: ByteVec, desired: U256) -> (U256) {
+    pub fn collateralNeeded(lToken: ByteVec, dToken: ByteVec, desired: U256) -> (U256, Bool) {
 
         return LendingHelper(lendingHelper).determineCollateralAmountWithMapping(
             lToken,
@@ -84,7 +80,7 @@ Contract LendingPoolFactory (
         let caller = callerAddress!()
         checkCaller!(caller == admin, 0)
 
-        // create pool fields
+        // create pool fields //! ralph freaking out about this code
         let (encodeImmutableFields, encodeMutableFields) = LendingPool.encodeFields!(
             selfContractId!(),
             tokenLend,                          
@@ -154,5 +150,27 @@ Contract LendingPoolFactory (
     // liquidate
     pub fn liquidate() -> () {
         // checks the user token position, if undercollateralized user position goes up for auction
+
+        // emit
+    }
+
+    // bid
+    pub fn bid() -> () {
+        // emit
+    }
+
+    // hammer `auction end`
+    pub fn hammer() -> () {
+        // emit
+    }
+
+    // repay loan
+    pub fn repay() -> () {
+        // emit
+    }
+
+    // claim
+    pub fn claim() -> () {
+        // emit
     }
 }

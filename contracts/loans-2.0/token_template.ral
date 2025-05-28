@@ -40,12 +40,16 @@ Contract TokenTemplate (
         // perform required collateral checks
         let (required, valid) = LendingPoolFactory(poolf).collateralNeeded(
             desired, 
-            want, 
             token, 
-            15000
+            want
         )
 
+        // verify is valid
         assert!(valid == true, 0)
+
+        // verify they have enough token to post collateral and update token amount
+        assert!(amount >= required, 0)
+        amount = amount - required  
 
         // call the function for borrow from lending pool
         LendingPool(pool).borrow(nft, selfAddress!(), want)
