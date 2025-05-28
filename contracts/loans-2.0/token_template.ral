@@ -9,18 +9,35 @@ Contract TokenTemplate (
     mut borrowed: U256
 ) {
     // withdraw
-    pub fn withdraw(size: U256) -> () {
+    @using(checkExternalCaller = true, updateFields = true, preapprovedAssets = false, assetsInContract = true)
+    pub fn withdraw(caller: Address, size: U256) -> () {
+
+        // verify it was called from nft
+        checkCaller!(callerAddress!() == contractIdToAddress!(nft), 0)
+        
+        // confirm this is available and it's not lended or loaned out
         assert!(size <= amount, 0)
+        
+        transferToken!(selfAddress!(), caller, token, size)
+
+        amount = amount - size
     }
 
     // deposit
-    pub fn deposit(size: U256) -> () {
+    @using(checkExternalCaller = true, updateFields = true, preapprovedAssets = true)
+    pub fn deposit(caller: Address, size: U256) -> () {
+
+        checkCaller!(callerAddress!() == contractIdToAddress!(nft), 0)
+
+        transferToken!(caller, selfAddress!(), token, size)
+
         amount = amount + size
     }
 
     // borrow against
-    // 125% minimum collateralization
-    pub fn borrow(size: U256) -> () {
+    pub fn borrow(desired: ByteVec, desiredAmount: U256) -> () {
+        // call the collateralization check
+
         borrowed = borrowed + size
     }
 

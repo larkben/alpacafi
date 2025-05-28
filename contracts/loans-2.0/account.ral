@@ -30,5 +30,83 @@ Contract Account(
   // GET METHODS
   // --------------------
 
+  // --------------------
+  // METHODS
+  // --------------------
+
+  fn doesExist(token: ByteVec) -> Bool {
+    let id = subContractId!(token)
+
+    return contractExists!(id)
+  }
+
+  pub fn depositToken(token: ByteVec, amount: U256) -> () {
+
+    let caller = callerAddress!()
+
+    // aps / verify
+    transferToken!(caller, caller, selfTokenId!(), 1)
+
+    // if the storage mapping doesn't already exist
+    if (doesExist(token)) {
+
+      let (encodeImmutableFields, encodeMutableFields) = TokenTemplate.encodeFields!(
+        selfTokenId!(),
+        token,
+        amount,
+        0,
+        0
+      )
+
+      let nftID = copyCreateSubContract!{caller -> ALPH: minimalContractDeposit!(), token: amount}(
+        token,
+        tokenTemplate,                                                                                  
+        encodeImmutableFields,
+        encodeMutableFields
+      )
+    }
+
+    // call the storage mapping and add the token to it
+    else {
+      let id = subContractId!(token)
+
+      let storage = TokenTemplate(id)
+
+      storage.deposit{caller -> token: amount}(caller, amount)
+    }
+  }
+
+  pub fn withdraw(token: ByteVec, amount: U256) -> () {
+    let caller = callerAddress!()
+
+    // aps / verify
+    transferToken!(caller, caller, selfTokenId!(), 1)
+
+    assert!(doesExist(token) == true, 0) // token contract does not exist
+
+    // perform the withdraw
+    let id = subContractId!(token)
+
+    let storage = TokenTemplate(id)
+
+    storage.withdraw(caller, amount)
+  }
+
+  // against - the token being borrowed against and the amount
+  pub fn borrow(against: ByteVec, desired: ByteVec, desiredAmount: U256) -> () {
+    let caller = callerAddress!()
+
+    // aps / verify
+    transferToken!(caller, caller, selfTokenId!(), 1)
+
+    assert!(doesExist(against) == true, 0) // token contract does not exist
+
+    // borrow against the token
+    let id = subContractId!(against)
+
+    let storage = TokenTemplate(id)
+
+    storage.borrow(amount)
+  }
 
 }

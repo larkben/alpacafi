@@ -1,15 +1,42 @@
 Contract LendingPoolFactory (
     admin: Address,
     lendingPoolTemplate: ByteVec,
-    mut fee: U256,
     // nft | account
     accountTemplate: ByteVec,
-    tokenTemplate: ByteVec
+    tokenTemplate: ByteVec,
+    mut numAccounts: U256
 ) {
+
+    event AccountCreated(who: Address, nft: ByteVec, number: U256)
 
     // create pool
     pub fn create() -> () {
         // admin only
+        
+    }
+
+    // create account
+    @using(checkExternalCaller = false, updateFields = true)
+    pub fn createAccount(tokenUri: ByteVec) -> () {
+
+        let caller = callerAddress!()
+
+        let (encodeImmutableFields, encodeMutableFields) = Account.encodeFields!(
+            tokenUri,
+            selfContractId!(),
+            numAccounts,
+            tokenTemplate
+        )
+
+        let nftID = copyCreateContract!{caller -> ALPH: minimalContractDeposit!()}(
+            accountTemplate,                                                                                  
+            encodeImmutableFields,
+            encodeMutableFields
+        )
+
+        numAccounts = numAccounts + 1
+
+        emit AccountCreated (caller, nftID, numAccounts)
     }
 
     // borrow
