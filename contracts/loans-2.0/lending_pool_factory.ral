@@ -1,18 +1,74 @@
 Contract LendingPoolFactory (
     admin: Address,
     lendingPoolTemplate: ByteVec,
+    mut lendingHelper: ByteVec,
     // nft | account
     accountTemplate: ByteVec,
     tokenTemplate: ByteVec,
     mut numAccounts: U256
 ) {
 
+    mapping [ByteVec, PairInfo] tokens
+
     event AccountCreated(who: Address, nft: ByteVec, number: U256)
 
+    // mapping config
+    @using(checkExternalCaller = true, preapprovedAssets = true)
+    pub fn mappingConfig(token: ByteVec, pair: ByteVec, decimals: U256, dia: Bool, add: Bool) -> () {
+        checkCaller!(callerAddress!() == admin, 0)
+
+        let temp = PairInfo {
+            pair: pair,
+            decimals: decimals,
+            oracle: dia
+        }
+
+        if (add) {
+            tokens.insert!(callerAddress!(), token, temp)
+        }
+        else {
+            tokens.remove!(callerAddress!(), token)
+        }
+    }
+
+    // get mapping value
+    pub fn getMapping(tokenId: ByteVec) -> (Bool, PairInfo) {
+        if (tokens.contains!(tokenId)) {
+            return true, tokens[tokenId]
+        }
+        else {
+            let temp = PairInfo {
+                pair: b``,
+                decimals: 0,
+                oracle: false
+            }
+
+            return false, temp
+        }
+    }
+
+    // config function
+    @using(checkExternalCaller = true, updateFields =  true)
+    pub fn editLendingHelper(newHelper: ByteVec) -> () {
+        checkCaller!(callerAddress!() == admin, 0)
+
+        lendingHelper = newHelper
+    }
+
+    // get sub pools
+    pub fn getSubPool(tokenLend: ByteVec, tokenCollateral: ByteVec) -> (ByteVec) {
+
+        //? path formula: lend ++ collateral
+
+        return subContractId!(tokenLend ++ tokenCollateral)
+    }
+
     // create pool
-    pub fn create() -> () {
+    pub fn create(tokenLend: ByteVec, tokenCollateral: ByteVec) -> () {
         // admin only
-        
+        checkCaller!(callerAddress!() == admin, 0)
+
+        // create pool fields
     }
 
     // create account
@@ -25,6 +81,8 @@ Contract LendingPoolFactory (
             tokenUri,
             selfContractId!(),
             numAccounts,
+            selfContractId!(),
+            lendingHelper,
             tokenTemplate
         )
 

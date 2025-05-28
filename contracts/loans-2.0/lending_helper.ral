@@ -1,45 +1,47 @@
 Contract LendingHelper (
     // oracle: IDIAOracle,  // DIA oracle
+    lendingFactory: ByteVec,
     oracle: ByteVec,            
     alpaca: ByteVec         // custom oracle
 ) {
-
     // determine collateral ratio
     pub fn determineCollateralRatio(
         tokenRequested: ByteVec,
         tokenAmount: U256,
-        tokenOracle: Bool,
         collateralToken: ByteVec, 
         collateralAmount: U256,
-        collateralOracle: Bool,
         threshhold: U256
     ) -> (U256, Bool) {
-        if (tokenPairs.contains!(tokenRequested) == true && tokenPairs.contains!(collateralToken)) {
+        
+        let (isValid, pair) = LendingPoolFactory(lendingFactory).getMapping(tokenRequested)
+        let (isValidTwo, pairTwo) = LendingPoolFactory(lendingFactory).getMapping(collateralToken)
+
+        if (isValid == true && isValidTwo == true) {
             let mut loanValue = 0
             let mut collateralValue = 0
 
             // fetch token price
-            if (tokenOracle) {
-                loanValue = TestOracle(oracle).getValue(tokenPairs[tokenRequested].pair).value
+            if (pair.oracle) {
+                loanValue = TestOracle(oracle).getValue(pair.pair).value
             }
             else {
-                loanValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[tokenRequested].pair).value
+                loanValue = AlpacaFiOracle(alpaca).getValue(pair.pair).value
             }
 
             // fetch collateral price
-            if (collateralOracle) {
-                collateralValue = TestOracle(oracle).getValue(tokenPairs[collateralToken].pair).value
+            if (pairTwo.oracle) {
+                collateralValue = TestOracle(oracle).getValue(pairTwo.pair).value
             }
             else {
-                collateralValue = AlpacaFiOracle(alpaca).getValue(tokenPairs[collateralToken].pair).value
+                collateralValue = AlpacaFiOracle(alpaca).getValue(pairTwo.pair).value
             }
 
             if (loanValue == 0 || collateralValue == 0) {
                 return 0, false
             }
 
-            let collateralDecimals = tokenPairs[collateralToken].decimals
-            let tokenDecimals = tokenPairs[tokenRequested].decimals
+            let collateralDecimals = pairTwo.decimals
+            let tokenDecimals = pair.decimals
 
             // Normalize collateral amount to 18 decimals
             let collateralNormalized = (collateralAmount * (10 |**| 18)) / (10 |**| collateralDecimals)

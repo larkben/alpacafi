@@ -7,6 +7,8 @@ Contract Account(
     collectionId: ByteVec,
     nftIndex: U256,
     // token storage
+    lendingFactoryPool: ByteVec,
+    lendingHelper: ByteVec,
     tokenTemplate: ByteVec
 )implements INFT {
 
@@ -93,7 +95,7 @@ Contract Account(
   }
 
   // against - the token being borrowed against and the amount
-  pub fn borrow(against: ByteVec, desired: ByteVec, desiredAmount: U256) -> () {
+  pub fn borrow(desired: ByteVec, desiredAmount: U256) -> () {
     let caller = callerAddress!()
 
     // aps / verify
@@ -106,7 +108,9 @@ Contract Account(
 
     let storage = TokenTemplate(id)
 
-    storage.borrow(amount)
+    // check pool collateral ratio
+    let pool = LendingPoolFactory(lendingFactoryPool).
+    storage.borrow(desired, desiredAmount)
   }
 
 }
