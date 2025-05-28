@@ -1,10 +1,13 @@
 Contract LendingPool (
     poolFactory: LendingPoolFactory,
-    token: ByteVec,
+    lendToken: ByteVec,                 // renamed for clarity
+    collateralToken: ByteVec,           // added collateral token
     mut feesGenerated: U256,
     mut amountToLend: U256,
     mut totalLended: U256,
-    mut lastUpdateTime: U256
+    mut totalDebtAmount: U256,          // added missing field
+    mut lastUpdateTime: U256,
+    mut poolRatio: U256                 // ratio required 
 ) {
     mapping [ByteVec, LendPosition] lendPositions
     mapping [ByteVec, DebtPosition] debtPositions
@@ -15,29 +18,74 @@ Contract LendingPool (
     event FeesCollected(totalFees: U256, timestamp: U256)
     event LendPositionClosed(lender: ByteVec, amount: U256)
     event DebtPositionClosed(borrower: ByteVec, amount: U256)
+    event FundingRateCollected(amount: U256, timestamp: U256)
     
     // 8 hours in milliseconds
     const FEE_COLLECTION_INTERVAL = 28800000
 
-    // 0.1% fee (1/1000)
+    // 0.1% fee (1/1000) - this is the base rate per 8 hours
     const FEE_RATE_NUMERATOR = 1
     const FEE_RATE_DENOMINATOR = 1000
     
-    @using(preapprovedAssets = true, assetsInContract = true)
-    pub fn lend(amount: U256) -> () {
+    // Minimum decimals for calculations
+    const MIN_DECIMALS = 6
+
+    pub fn getRatio() -> (U256) {
+        return poolRatio
+    }
+
+    // Calculate and collect funding rate based on time elapsed
+    @using(updateFields = true)
+    fn collectFundingRate() -> () {
+        let currentTime = blockTimeStamp!()
+        
+        // Skip if no debt to charge fees on
+        if (totalDebtAmount == 0) {
+            return
+        }
+        
+        // Calculate time elapsed since last update
+        let timeElapsed = currentTime - lastUpdateTime
+        
+        // Skip if no time has passed
+        if (timeElapsed == 0) {
+            return
+        }
+        
+        // Calculate funding rate proportional to time elapsed
+        // Formula: (debtAmount * feeRate * timeElapsed) / (FEE_COLLECTION_INTERVAL * denominator)
+        let fundingFee = (totalDebtAmount * FEE_RATE_NUMERATOR * timeElapsed) / (FEE_COLLECTION_INTERVAL * FEE_RATE_DENOMINATOR)
+        
+        // Only collect if fee is meaningful (at least 1 unit with min decimals)
+        let minFee = 10 |**| MIN_DECIMALS
+        if (fundingFee >= minFee) {
+            feesGenerated = feesGenerated + fundingFee
+            emit FundingRateCollected(fundingFee, currentTime)
+        }
+        
+        // Update last collection time
+        lastUpdateTime = currentTime
+    }
+    
+    @using(preapprovedAssets = true, assetsInContract = true, updateFields = true)
+    pub fn lend(account: ByteVec, caller: Address, amount: U256) -> () {
         assert!(amount > 0, ErrorCodes.InvalidAmount)
+        
+        // Collect funding rate before state changes
+        collectFundingRate()
         
         let caller = callerAddress!()
         
-        // Transfer tokens to contract from nft
+        // Transfer tokens to contract from caller
+        transferTokenToSelf!(caller, lendToken, amount)
         
         // Update or create lend position
-        if (lendPositions.contains!(caller)) {
-            let mut position = lendPositions[caller]
+        if (lendPositions.contains!(account)) {
+            let mut position = lendPositions[account]
             position.lendedAmount = position.lendedAmount + amount
-            lendPositions[caller] = position
+            lendPositions[account] = position
         } else {
-            lendPositions[caller] = LendPosition {
+            lendPositions[account] = LendPosition {
                 contract: selfAddress!(),
                 lendedAmount: amount,
                 timeEntered: blockTimeStamp!()
@@ -51,10 +99,13 @@ Contract LendingPool (
         emit LendPositionCreated(caller, amount)
     }
     
-    @using(preapprovedAssets = true, assetsInContract = true)
-    pub fn borrow(amount: U256) -> () {
+    @using(preapprovedAssets = true, assetsInContract = true, updateFields = true)
+    pub fn borrow(account: ByteVec, caller: Address, amount: U256) -> () {
         assert!(amount > 0, ErrorCodes.InvalidAmount)
         assert!(amount <= amountToLend, ErrorCodes.InsufficientLiquidity)
+        
+        // Collect funding rate before state changes
+        collectFundingRate()
         
         let caller = callerAddress!()
         
@@ -76,13 +127,17 @@ Contract LendingPool (
         totalDebtAmount = totalDebtAmount + amount
         
         // Transfer tokens to borrower
+        transferTokenFromSelf!(caller, lendToken, amount)
         
         emit DebtPositionCreated(caller, amount)
     }
     
-    @using(preapprovedAssets = true, assetsInContract = true)
-    pub fn repayDebt(amount: U256) -> () {
+    @using(preapprovedAssets = true, assetsInContract = true, updateFields = true)
+    pub fn repayDebt(account: ByteVec, caller: Address, amount: U256) -> () {
         assert!(amount > 0, ErrorCodes.InvalidAmount)
+        
+        // Collect funding rate before state changes
+        collectFundingRate()
         
         let caller = callerAddress!()
         assert!(debtPositions.contains!(caller), ErrorCodes.NoDebtPosition)
@@ -91,7 +146,7 @@ Contract LendingPool (
         assert!(amount <= position.debtAmount, ErrorCodes.ExcessiveRepayment)
         
         // Transfer repayment to contract
-        transferTokenToSelf!(caller, token, amount)
+        transferTokenToSelf!(caller, lendToken, amount)
         
         // Update debt position
         position.debtAmount = position.debtAmount - amount
@@ -108,9 +163,12 @@ Contract LendingPool (
         emit DebtPositionClosed(caller, amount)
     }
     
-    @using(preapprovedAssets = true, assetsInContract = true)
-    pub fn withdrawLend(amount: U256) -> () {
+    @using(preapprovedAssets = true, assetsInContract = true, updateFields = true)
+    pub fn withdrawLend(account: ByteVec, caller: Address, amount: U256) -> () {
         assert!(amount > 0, ErrorCodes.InvalidAmount)
+        
+        // Collect funding rate before state changes
+        collectFundingRate()
         
         let caller = callerAddress!()
         assert!(lendPositions.contains!(caller), ErrorCodes.NoLendPosition)
@@ -132,8 +190,35 @@ Contract LendingPool (
         totalLended = totalLended - amount
         
         // Transfer tokens back to lender
-        transferTokenFromSelf!(caller, token, amount)
+        transferTokenFromSelf!(caller, lendToken, amount)
         
         emit LendPositionClosed(caller, amount)
+    }
+
+    // Public function to manually trigger funding rate collection
+    @using(updateFields = true)
+    pub fn triggerFundingRateCollection() -> () {
+        collectFundingRate()
+    }
+
+    // View function to calculate pending funding fees without collecting
+    pub fn getPendingFundingFees() -> U256 {
+        if (totalDebtAmount == 0) {
+            return 0
+        }
+        
+        let currentTime = blockTimeStamp!()
+        let timeElapsed = currentTime - lastUpdateTime
+        
+        if (timeElapsed == 0) {
+            return 0
+        }
+        
+        return (totalDebtAmount * FEE_RATE_NUMERATOR * timeElapsed) / (FEE_COLLECTION_INTERVAL * FEE_RATE_DENOMINATOR)
+    }
+
+    // View function to get pool info
+    pub fn getPoolInfo() -> (ByteVec, ByteVec, U256, U256, U256, U256, U256) {
+        return (lendToken, collateralToken, feesGenerated, amountToLend, totalLended, totalDebtAmount, lastUpdateTime)
     }
 }

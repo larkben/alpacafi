@@ -35,10 +35,12 @@ Contract TokenTemplate (
     }
 
     // borrow against
-    pub fn borrow(desired: ByteVec, desiredAmount: U256) -> () {
-        // call the collateralization check
+    pub fn borrow(poolf: ByteVec, pool: ByteVec, want: U256) -> () {
 
-        borrowed = borrowed + size
+        // perform required collateral checks
+        LendingPoolFactory(poolf).
+
+        // call the function for borrow from lending pool
     }
 
     // lend out

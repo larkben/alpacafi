@@ -8,7 +8,6 @@ Contract Account(
     nftIndex: U256,
     // token storage
     lendingFactoryPool: ByteVec,
-    lendingHelper: ByteVec,
     tokenTemplate: ByteVec
 )implements INFT {
 
@@ -95,22 +94,22 @@ Contract Account(
   }
 
   // against - the token being borrowed against and the amount
-  pub fn borrow(desired: ByteVec, desiredAmount: U256) -> () {
+  pub fn borrow(desired: ByteVec, desiredAmount: U256, collateral: ByteVec) -> () {
     let caller = callerAddress!()
 
     // aps / verify
     transferToken!(caller, caller, selfTokenId!(), 1)
 
-    assert!(doesExist(against) == true, 0) // token contract does not exist
+    assert!(doesExist(collateral) == true, 0) // token contract does not exist
 
     // borrow against the token
-    let id = subContractId!(against)
+    let id = subContractId!(collateral)
 
     let storage = TokenTemplate(id)
 
     // check pool collateral ratio
-    let pool = LendingPoolFactory(lendingFactoryPool).
+    let ratio = LendingPoolFactory(lendingFactoryPool).getRatio(desired ++ collateral)
+
     storage.borrow(desired, desiredAmount)
   }
-
 }

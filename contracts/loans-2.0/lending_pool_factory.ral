@@ -63,12 +63,49 @@ Contract LendingPoolFactory (
         return subContractId!(tokenLend ++ tokenCollateral)
     }
 
+    pub fn getRatio(path: ByteVec) -> () {
+        return LendingPool(subContractId!(path)).getRatio()
+    }
+
+    pub fn collateralNeeded(token: ByteVec, desired: U256) -> (U256) {
+
+        let coin = tokens[token]
+
+        return LendingHelper(lendingHelper).determineCollateralAmount(
+            coin.pair,
+            coin.decimals,
+            desired,
+            15000                                                // 150% collateral ratio
+        )
+    }
+
     // create pool
     pub fn create(tokenLend: ByteVec, tokenCollateral: ByteVec) -> () {
         // admin only
-        checkCaller!(callerAddress!() == admin, 0)
+        let caller = callerAddress!()
+        checkCaller!(caller == admin, 0)
 
         // create pool fields
+        let (encodeImmutableFields, encodeMutableFields) = LendingPool.encodeFields!(
+            selfContractId!(),
+            tokenLend,                          
+            tokenCollateral,                    
+            0,
+            0,
+            0,
+            0,
+            blockTimeStamp!(),
+            0
+        )
+
+        let poolID = copyCreateSubContract!{caller -> ALPH: minimalContractDeposit!()}(
+            tokenLend ++ tokenCollateral,
+            lendingPoolTemplate,                                                                                  
+            encodeImmutableFields,
+            encodeMutableFields
+        )
+
+        // emit
     }
 
     // create account
@@ -82,11 +119,11 @@ Contract LendingPoolFactory (
             selfContractId!(),
             numAccounts,
             selfContractId!(),
-            lendingHelper,
             tokenTemplate
         )
 
-        let nftID = copyCreateContract!{caller -> ALPH: minimalContractDeposit!()}(
+        let nftID = copyCreateSubContract!{caller -> ALPH: minimalContractDeposit!()}(
+            toByteVec!(numAccounts),
             accountTemplate,                                                                                  
             encodeImmutableFields,
             encodeMutableFields
