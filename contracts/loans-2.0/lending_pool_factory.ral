@@ -7,12 +7,32 @@ Contract LendingPoolFactory (
     tokenTemplate: ByteVec,
     mut numAccounts: U256
 ) {
-
+    
+    // MAPPING
     mapping [ByteVec, PairInfo] tokens
+
+    // -------------------
+    // EVENTS
+    // -------------------
 
     event AccountCreated(who: Address, nft: ByteVec, number: U256)
 
-    // mapping config
+    event PoolCreated(tokenLend: ByteVec, tokenCollateral: ByteVec, time: U256)
+
+    event Borrow()
+    event Lend()
+
+    event Liquidate()
+    event Bid()
+    event Hammer()
+
+    event Repay()
+    event Claim()
+
+    // -------------------
+    // MAPPING | CONFIG
+    // -------------------
+    
     @using(checkExternalCaller = true, preapprovedAssets = true)
     pub fn mappingConfig(token: ByteVec, pair: ByteVec, decimals: U256, dia: Bool, add: Bool) -> () {
         checkCaller!(callerAddress!() == admin, 0)
@@ -31,7 +51,17 @@ Contract LendingPoolFactory (
         }
     }
 
-    // get mapping value
+    @using(checkExternalCaller = true, updateFields =  true)
+    pub fn editLendingHelper(newHelper: ByteVec) -> () {
+        checkCaller!(callerAddress!() == admin, 0)
+
+        lendingHelper = newHelper
+    }
+
+    // -------------------
+    // GET METHODS
+    // -------------------
+
     pub fn getMapping(tokenId: ByteVec) -> (Bool, PairInfo) {
         if (tokens.contains!(tokenId)) {
             return true, tokens[tokenId]
@@ -47,15 +77,6 @@ Contract LendingPoolFactory (
         }
     }
 
-    // config function
-    @using(checkExternalCaller = true, updateFields =  true)
-    pub fn editLendingHelper(newHelper: ByteVec) -> () {
-        checkCaller!(callerAddress!() == admin, 0)
-
-        lendingHelper = newHelper
-    }
-
-    // get sub pools
     pub fn getSubPool(tokenLend: ByteVec, tokenCollateral: ByteVec) -> (ByteVec) {
 
         //? path formula: lend ++ collateral
@@ -74,17 +95,21 @@ Contract LendingPoolFactory (
         
     }
 
-    // create pool
+    // -------------------
+    // METHODS
+    // -------------------
+
     pub fn create(tokenLend: ByteVec, tokenCollateral: ByteVec) -> () {
+
         // admin only
         let caller = callerAddress!()
         checkCaller!(caller == admin, 0)
 
-        // create pool fields //! ralph freaking out about this code
+        // create pool fields
         let (encodeImmutableFields, encodeMutableFields) = LendingPool.encodeFields!(
             selfContractId!(),
-            tokenLend,                          
-            tokenCollateral,                    
+            tokenLend,
+            tokenCollateral,
             0,
             0,
             0,
@@ -101,9 +126,14 @@ Contract LendingPoolFactory (
         )
 
         // emit
+        emit PoolCreated (
+            tokenLend, 
+            tokenCollateral,
+            blockTimeStamp!()
+        )
+        
     }
 
-    // create account
     @using(checkExternalCaller = false, updateFields = true)
     pub fn createAccount(tokenUri: ByteVec) -> () {
 
@@ -130,21 +160,27 @@ Contract LendingPoolFactory (
     }
 
     // borrow
-    pub fn borrow() -> () {
-        // calls the nft
+    pub fn borrow(nft: ByteVec, desired: ByteVec, amount: U256, collateral: ByteVec, cAmount: U256) -> () {
 
-        // funds sent to caller
+        let caller = callerAddress!()
+        let path = desired ++ collateral
 
-        // funds subtracted from nft
+        let poolId = subContractId!(path)
+
+        checkCaller!(caller == contractIdToAddress!(poolId), 0)
+
+        emit Borrow()
     }
 
     // lend
-    pub fn lend() -> () {
+    pub fn lend(nft: ByteVec) -> () {
         // calls the nft
 
         // takes funds from nft
 
         // creates mapping to represent interest / stake
+
+        emit Lend()
     }
 
     // liquidate
@@ -152,25 +188,35 @@ Contract LendingPoolFactory (
         // checks the user token position, if undercollateralized user position goes up for auction
 
         // emit
+
+        emit Liquidate()
     }
 
     // bid
     pub fn bid() -> () {
         // emit
+
+        emit Bid()
     }
 
     // hammer `auction end`
     pub fn hammer() -> () {
         // emit
+
+        emit Hammer()
     }
 
     // repay loan
     pub fn repay() -> () {
         // emit
+
+        emit Repay()
     }
 
     // claim
     pub fn claim() -> () {
         // emit
+
+        emit Claim()
     }
 }

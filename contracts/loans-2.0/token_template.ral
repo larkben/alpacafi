@@ -49,15 +49,24 @@ Contract TokenTemplate (
 
         // verify they have enough token to post collateral and update token amount
         assert!(amount >= required, 0)
+
         amount = amount - required  
+        borrowed = borrowed + required
 
         // call the function for borrow from lending pool
-        LendingPool(pool).borrow(nft, selfAddress!(), want)
+        LendingPool(pool).borrow{selfAddress!() -> desired: required}(nft, selfAddress!(), want)
     }
 
-    // lend out
-    pub fn lend(size: U256) -> () {
-        lent = lent + size
+    // lend out //! possibility to loan against lended tokens
+    pub fn lend(poolf: ByteVec, pool: ByteVec, quantity: U256) -> () {
+
+        // verify they have enough token to lend out
+        assert!(amount >= quantity, 0)
+
+        // quantity subtracted from lent
+        lent = lent - quantity
+
+        
     }
 
     pub fn claimRewards(size: U256) -> () {

@@ -81,25 +81,28 @@ Contract LendingPool (
         
         // Update or create lend position
         if (lendPositions.contains!(account)) {
+
+            //? make sure they collect rewards prior to this or we update their last claim / timeEntered value
             let mut position = lendPositions[account]
             position.lendedAmount = position.lendedAmount + amount
             lendPositions[account] = position
+
         } else {
+
             let temp = LendPosition {
-                contract: selfAddress!(),
+                contract: selfContractId!(),
                 lendedAmount: amount,
                 timeEntered: blockTimeStamp!()
             }
 
-            //! mapping needs to be posted from user
-            lendPositions.insert!(user, account)
+            lendPositions.insert!(user, account, temp)
         }
         
         // Update global state
         amountToLend = amountToLend + amount
         totalLended = totalLended + amount
         
-        emit LendPositionCreated(caller, amount)
+        emit LendPositionCreated(account, amount)
     }
     
     @using(preapprovedAssets = true, assetsInContract = true, updateFields = true)
@@ -130,7 +133,7 @@ Contract LendingPool (
             debtPositions[account] = position
         } else {
             debtPositions[account] = DebtPosition {
-                contract: selfAddress!(),
+                contract: selfContractId!(),
                 debtAmount: amount,
                 timeEntered: blockTimeStamp!()
             }
