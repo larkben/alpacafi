@@ -3,10 +3,10 @@
   "compilerOptionsUsed": {
     "ignoreUnusedConstantsWarnings": true,
     "ignoreUnusedVariablesWarnings": true,
-    "ignoreUnusedFieldsWarnings": false,
-    "ignoreUnusedPrivateFunctionsWarnings": false,
-    "ignoreUpdateFieldsCheckWarnings": false,
-    "ignoreCheckExternalCallerWarnings": false,
+    "ignoreUnusedFieldsWarnings": true,
+    "ignoreUnusedPrivateFunctionsWarnings": true,
+    "ignoreUpdateFieldsCheckWarnings": true,
+    "ignoreCheckExternalCallerWarnings": true,
     "ignoreUnusedFunctionReturnWarnings": false,
     "skipAbstractContractCheck": false
   },

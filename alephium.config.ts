@@ -22,10 +22,10 @@ const configuration: typeof config = {
   compilerOptions: {
     ignoreUnusedConstantsWarnings: true,
     ignoreUnusedVariablesWarnings: true,
-    ignoreUnusedFieldsWarnings: false,
-    ignoreUnusedPrivateFunctionsWarnings: false,
-    ignoreUpdateFieldsCheckWarnings: false,
-    ignoreCheckExternalCallerWarnings: false,
+    ignoreUnusedFieldsWarnings: true,
+    ignoreUnusedPrivateFunctionsWarnings: true,
+    ignoreUpdateFieldsCheckWarnings: true,
+    ignoreCheckExternalCallerWarnings: true,
     errorOnWarnings: false,
   },
 
