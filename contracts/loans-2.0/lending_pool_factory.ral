@@ -77,6 +77,10 @@ Contract LendingPoolFactory (
         }
     }
 
+    pub fn getContractId() -> ByteVec {
+        return selfContractId!()
+    }
+
     pub fn getSubPool(tokenLend: ByteVec, tokenCollateral: ByteVec) -> (ByteVec) {
 
         //? path formula: lend ++ collateral

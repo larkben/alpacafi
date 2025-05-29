@@ -113,30 +113,33 @@ Contract LendingPool (
         // collect funding rate before state changes
         collectFundingRate()
         
-        let caller = callerAddress!()
+        let immediate = callerAddress!()
 
         // validate collateral needed
-        let (collateralAmount, valid) = LendingPoolFactory(poolFactory).collateralNeeded(
+        let (collateralAmount, valid) = LendingPoolFactory(poolFactory.getContractId()).collateralNeeded(
             lendToken,
-            amount,
             collateralToken,
-            15000               // 150%
+            amount
         )
 
         // collect collateral
-        transferToken!(caller, selfAddress!(), collateralToken, collateralAmount)
+        transferToken!(immediate, selfAddress!(), collateralToken, collateralAmount)
         
         // Update or create debt position
         if (debtPositions.contains!(account)) {
+
             let mut position = debtPositions[account]
             position.debtAmount = position.debtAmount + amount
             debtPositions[account] = position
+
         } else {
+
             debtPositions[account] = DebtPosition {
                 contract: selfContractId!(),
                 debtAmount: amount,
                 timeEntered: blockTimeStamp!()
             }
+
         }
         
         // update global state
@@ -146,7 +149,7 @@ Contract LendingPool (
         // Transfer tokens to borrower
         transferTokenFromSelf!(caller, lendToken, amount)
         
-        emit DebtPositionCreated(caller, amount)
+        emit DebtPositionCreated(account, amount)
     }
     
     //! need to work on this
@@ -157,10 +160,12 @@ Contract LendingPool (
         // Collect funding rate before state changes
         collectFundingRate()
         
-        let caller = callerAddress!()
-        assert!(debtPositions.contains!(caller), ErrorCodes.NoDebtPosition)
+        let immediate = callerAddress!()
+
+        //! start work here
+        assert!(debtPositions.contains!(account), ErrorCodes.NoDebtPosition)
         
-        let mut position = debtPositions[caller]
+        let mut position = debtPositions[account]
         assert!(amount <= position.debtAmount, ErrorCodes.ExcessiveRepayment)
         
         // Transfer repayment to contract
